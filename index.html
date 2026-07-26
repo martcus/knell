@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Knell</title>
+<meta name="description" content="Knell – EMOM kettlebell timer with round announcements, countdown beeps, and offline support">
+<meta name="theme-color" content="#0D0D0F" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Knell">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── DARK THEME (default) ───────────────────────────── */
+  :root {
+    --bg:       #0D0D0F;
+    --surface:  #1A1A1F;
+    --surface2: #252528;
+    --border:   #2e2e33;
+    --lime:     #C6FF00;
+    --lime-dim: rgba(198,255,0,.12);
+    --cyan:     #00E5FF;
+    --cyan-dim: rgba(0,229,255,.12);
+    --danger:   #FF4D6D;
+    --danger-dim:rgba(255,77,109,.12);
+    --gold:     #FFD000;
+    --gold-dim: rgba(255,208,0,.12);
+    --text:     #F0F0F0;
+    --text2:    #B0B0B8;
+    --muted:    #6B6B72;
+    --ring-size: min(340px, 78vw);
+    --shadow-start: rgba(0,0,0,.0);
+    --btn-secondary-hover: #2e2e33;
+    --lime-btn-text: #0D0D0F;
+  }
+
+  /* ── LIGHT THEME ────────────────────────────────────── */
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg:       #F2F2F7;
+      --surface:  #FFFFFF;
+      --surface2: #E5E5EA;
+      --border:   #D1D1D6;
+      --lime:     #5A8A00;
+      --lime-dim: rgba(90,138,0,.10);
+      --cyan:     #007AFF;
+      --cyan-dim: rgba(0,122,255,.10);
+      --danger:   #FF3B30;
+      --danger-dim:rgba(255,59,48,.10);
+      --gold:     #B8860B;
+      --gold-dim: rgba(184,134,11,.10);
+      --text:     #1C1C1E;
+      --text2:    #3A3A3C;
+      --muted:    #8E8E93;
+      --shadow-start: rgba(0,0,0,.06);
+      --btn-secondary-hover: #D1D1D6;
+      --lime-btn-text: #FFFFFF;
+    }
+    /* ring glow softer on light */
+    .ring-prog { filter: drop-shadow(0 0 5px var(--lime)); }
+    /* card shadow instead of border blending */
+    .config-card, .toggle-card {
+      box-shadow: 0 1px 4px var(--shadow-start), 0 4px 16px rgba(0,0,0,.06);
+    }
+    .btn-start {
+      filter: drop-shadow(0 2px 8px rgba(90,138,0,.25)) !important;
+    }
+    .btn-start:hover {
+      filter: drop-shadow(0 2px 14px rgba(90,138,0,.4)) !important;
+    }
+    .status-pill.running  { background: var(--lime-dim);   color: var(--lime);   }
+    .status-pill.half     { background: var(--cyan-dim);   color: var(--cyan);   }
+    .status-pill.done     { background: var(--danger-dim); color: var(--danger); }
+    .status-pill.countdown{ background: var(--gold-dim);   color: var(--gold);   }
+    .switch input:checked ~ .switch-track { background: rgba(90,138,0,.3); }
+    .switch input:checked ~ .switch-thumb { background: var(--lime); box-shadow: 0 0 6px rgba(90,138,0,.4); }
+    .log-num { color: var(--lime); }
+    .log-bar  { background: var(--lime); }
+  }
+
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100dvh;
+    display: flex; flex-direction: column; align-items: center;
+    overflow-x: hidden;
+    transition: background .3s, color .3s;
+  }
+  header {
+    width: 100%; max-width: 480px;
+    padding: 28px 24px 0;
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; letter-spacing: .12em; color: var(--lime); line-height: 1; }
+  .logo-sub { font-size: .58rem; font-weight: 500; letter-spacing: .18em; color: var(--muted); text-transform: uppercase; white-space: nowrap; }
+  main {
+    width: 100%; max-width: 480px;
+    padding: 24px 24px 40px;
+    display: flex; flex-direction: column; align-items: center; gap: 28px; flex: 1;
+  }
+
+  /* ── RING ─────────────────────────────────────────────── */
+  .ring-wrap { position: relative; width: var(--ring-size); height: var(--ring-size); flex-shrink: 0; }
+  .ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring-bg   { fill: none; stroke: var(--surface2); stroke-width: 6; }
+  .ring-half { fill: none; stroke: var(--cyan); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 0 1000; opacity: .35; transition: stroke-dasharray .3s ease; }
+  .ring-prog { fill: none; stroke: var(--lime); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 0 1000; transition: stroke-dasharray .25s linear, stroke .3s; filter: drop-shadow(0 0 8px var(--lime)); }
+  .ring-inner { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .ring-time  { font-family: 'Bebas Neue', sans-serif; font-size: clamp(4.5rem, 20vw, 5.5rem); line-height: 1; letter-spacing: .03em; color: var(--text); transition: color .3s; }
+  .ring-time.half { color: var(--cyan); }
+  .ring-time.end  { color: var(--danger); }
+  .ring-time.go   { color: var(--gold); }
+  .ring-label { font-size: .65rem; font-weight: 600; letter-spacing: .25em; color: var(--muted); text-transform: uppercase; }
+  .ring-round { margin-top: 6px; font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: .1em; color: var(--muted); }
+  .ring-round span { color: var(--text); }
+
+  /* ── STATUS PILL ──────────────────────────────────────── */
+  .status-pill { display: inline-flex; align-items: center; gap: 7px; padding: 6px 14px; border-radius: 100px; background: var(--surface); font-size: .72rem; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); transition: background .3s, color .3s; }
+  .status-pill.running  { background: var(--lime-dim);    color: var(--lime);   }
+  .status-pill.half     { background: var(--cyan-dim);    color: var(--cyan);   }
+  .status-pill.done     { background: var(--danger-dim);  color: var(--danger); }
+  .status-pill.countdown{ background: var(--gold-dim);    color: var(--gold);   }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .dot.pulse { animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+
+  /* ── CONTROLS ─────────────────────────────────────────── */
+  .controls { width: 100%; display: flex; gap: 12px; }
+  .btn { flex: 1; height: 56px; border: none; border-radius: 14px; font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: .12em; cursor: pointer; transition: transform .12s, filter .2s, background .2s, color .2s; }
+  .btn:active { transform: scale(.96); }
+  .btn-start { background: var(--lime); color: var(--lime-btn-text); flex: 2; filter: drop-shadow(0 0 18px rgba(198,255,0,.3)); }
+  .btn-start:hover { filter: drop-shadow(0 0 28px rgba(198,255,0,.55)); }
+  .btn-start:disabled { background: var(--surface2); color: var(--muted); filter: none; cursor: not-allowed; }
+  .btn-pause { background: var(--surface2); color: var(--text); }
+  .btn-pause:hover { background: var(--btn-secondary-hover); }
+  .btn-reset { background: var(--surface2); color: var(--muted); }
+  .btn-reset:hover { color: var(--danger); }
+
+  /* ── CONFIG CARD ──────────────────────────────────────── */
+  .config-card { width: 100%; background: var(--surface); border-radius: 18px; padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .cfg-field { display: flex; flex-direction: column; gap: 8px; }
+  .cfg-field label { font-size: .68rem; font-weight: 600; letter-spacing: .22em; color: var(--muted); text-transform: uppercase; }
+  .stepper { display: flex; align-items: center; background: var(--surface2); border-radius: 10px; overflow: hidden; height: 44px; }
+  .stepper button { width: 40px; height: 100%; background: transparent; border: none; color: var(--muted); font-size: 1.3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color .2s, background .2s; flex-shrink: 0; }
+  .stepper button:hover { color: var(--lime); background: var(--lime-dim); }
+  .stepper input { flex: 1; background: transparent; border: none; color: var(--text); font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: .05em; text-align: center; width: 0; -moz-appearance: textfield; }
+  .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .stepper input:focus { outline: none; }
+
+  /* ── TOGGLE CARD ──────────────────────────────────────── */
+  .toggle-card { width: 100%; background: var(--surface); border-radius: 18px; padding: 16px 20px; display: flex; flex-direction: column; }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--surface2); }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+  .toggle-label { font-size: .82rem; font-weight: 500; color: var(--text); }
+  .toggle-desc  { font-size: .68rem; color: var(--muted); letter-spacing: .04em; }
+  .toggle-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-left: 12px; }
+
+  /* ── MINI STEPPER ─────────────────────────────────────── */
+  .mini-stepper { display: flex; align-items: center; background: var(--surface2); border-radius: 8px; overflow: hidden; height: 34px; max-width: 110px; transition: max-width .3s cubic-bezier(.4,0,.2,1), opacity .2s; }
+  .mini-stepper.hidden { max-width: 0; opacity: 0; pointer-events: none; }
+  .mini-stepper button { width: 30px; height: 100%; background: transparent; border: none; color: var(--muted); font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color .15s, background .15s; flex-shrink: 0; }
+  .mini-stepper button:hover { color: var(--gold); background: var(--gold-dim); }
+  .mini-stepper input { width: 34px; background: transparent; border: none; color: var(--text); font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: .04em; text-align: center; -moz-appearance: textfield; }
+  .mini-stepper input::-webkit-outer-spin-button, .mini-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .mini-stepper input:focus { outline: none; }
+
+  /* ── SWITCH ───────────────────────────────────────────── */
+  .switch { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch-track { position: absolute; inset: 0; border-radius: 13px; background: var(--surface2); transition: background .25s; cursor: pointer; }
+  .switch-thumb { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--muted); transition: transform .25s cubic-bezier(.4,0,.2,1), background .25s; pointer-events: none; }
+  .switch input:checked ~ .switch-track { background: rgba(198,255,0,.25); }
+  .switch input:checked ~ .switch-thumb { transform: translateX(18px); background: var(--lime); box-shadow: 0 0 8px rgba(198,255,0,.5); }
+
+  /* ── LOG ──────────────────────────────────────────────── */
+  .log-wrap { width: 100%; }
+  .log-title { font-size: .68rem; font-weight: 600; letter-spacing: .22em; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+  .log-list { display: flex; flex-direction: column; gap: 6px; max-height: 140px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--surface2) transparent; }
+  .log-item { display: flex; align-items: center; gap: 10px; padding: 9px 14px; background: var(--surface); border-radius: 10px; font-size: .8rem; animation: slideIn .3s ease; }
+  @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+  .log-num { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; color: var(--lime); min-width: 28px; }
+  .log-bar-wrap { flex: 1; height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+  .log-bar { height: 100%; background: var(--lime); border-radius: 2px; transition: width .5s ease; }
+  .log-time { font-family: 'Bebas Neue', sans-serif; font-size: .9rem; color: var(--muted); min-width: 36px; text-align: right; }
+
+  /* ── FLASH ────────────────────────────────────────────── */
+  #flash { pointer-events: none; position: fixed; inset: 0; opacity: 0; transition: opacity .08s; z-index: 99; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ring-prog, .ring-half { transition: none; }
+    .dot.pulse { animation: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Knell</div>
+  <div class="logo-sub">Yet Another EMOM Timer</div>
+</header>
+<main>
+  <div class="status-pill" id="statusPill">
+    <div class="dot" id="statusDot"></div>
+    <span id="statusText">READY</span>
+  </div>
+  <div class="ring-wrap">
+    <svg viewBox="0 0 200 200">
+      <circle class="ring-bg"   cx="100" cy="100" r="88"/>
+      <circle class="ring-half" cx="100" cy="100" r="88" id="ringHalf"/>
+      <circle class="ring-prog" cx="100" cy="100" r="88" id="ringProg"/>
+    </svg>
+    <div class="ring-inner">
+      <div class="ring-label" id="ringLabel">SECONDS</div>
+      <div class="ring-time" id="ringTime">00</div>
+      <div class="ring-round">ROUND <span id="rRound">0</span>/<span id="rTotal">0</span></div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="btn btn-reset" onclick="resetTimer()">↺</button>
+    <button class="btn btn-start" id="btnStart" onclick="startTimer()">START</button>
+    <button class="btn btn-pause" id="btnPause" onclick="pauseTimer()" disabled>II</button>
+  </div>
+  <div class="config-card" id="configCard">
+    <div class="cfg-field">
+      <label>Rounds</label>
+      <div class="stepper">
+        <button onclick="stepCfg('rounds',-1)">−</button>
+        <input type="number" id="cfgRounds" value="10" min="1" max="99">
+        <button onclick="stepCfg('rounds',+1)">+</button>
+      </div>
+    </div>
+    <div class="cfg-field">
+      <label>Duration (sec)</label>
+      <div class="stepper">
+        <button onclick="stepCfg('duration',-5)">−</button>
+        <input type="number" id="cfgDuration" value="60" min="10" max="300">
+        <button onclick="stepCfg('duration',+5)">+</button>
+      </div>
+    </div>
+  </div>
+  <div class="toggle-card">
+    <div class="toggle-row">
+      <div class="toggle-info">
+        <div class="toggle-label">End-of-round countdown</div>
+        <div class="toggle-desc">Beep each second in the last 5s</div>
+      </div>
+      <div class="toggle-right">
+        <label class="switch">
+          <input type="checkbox" id="togCountdown" checked>
+          <div class="switch-track"></div><div class="switch-thumb"></div>
+        </label>
+      </div>
+    </div>
+    <div class="toggle-row">
+      <div class="toggle-info">
+        <div class="toggle-label">Halfway countdown</div>
+        <div class="toggle-desc">Beep each second in the last 5s della prima metà</div>
+      </div>
+      <div class="toggle-right">
+        <label class="switch">
+          <input type="checkbox" id="togHalfCountdown">
+          <div class="switch-track"></div><div class="switch-thumb"></div>
+        </label>
+      </div>
+    </div>
+    <div class="toggle-row">
+      <div class="toggle-info">
+        <div class="toggle-label">Start timer</div>
+        <div class="toggle-desc">Countdown before the EMOM begins</div>
+      </div>
+      <div class="toggle-right">
+        <div class="mini-stepper hidden" id="startCdStepper">
+          <button onclick="stepStartCd(-5)">−</button>
+          <input type="number" id="cfgStartCd" value="10" min="5" max="60" step="5" readonly>
+          <button onclick="stepStartCd(+5)">+</button>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="togStartCd" onchange="onToggleStartCd()">
+          <div class="switch-track"></div><div class="switch-thumb"></div>
+        </label>
+      </div>
+    </div>
+  </div>
+  <div class="log-wrap" id="logWrap" style="display:none">
+    <div class="log-title">Round Log</div>
+    <div class="log-list" id="logList"></div>
+  </div>
+</main>
+<div id="flash"></div>
+<script>
+// ── WAKE LOCK ─────────────────────────────────────────────────
+let wakeLock = null;
+
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch (_) {}
+}
+
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release(); wakeLock = null; }
+}
+
+// Re-acquire if page becomes visible again (e.g. after tab switch)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && (running || inStartCd) && !paused) {
+    requestWakeLock();
+  }
+});
+
+// ── AUDIO ────────────────────────────────────────────────────
+const actx = new (window.AudioContext || window.webkitAudioContext)();
+function beep(freq, dur, type='sine', vol=0.4) {
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.connect(g); g.connect(actx.destination);
+  o.type = type;
+  o.frequency.setValueAtTime(freq, actx.currentTime);
+  g.gain.setValueAtTime(vol, actx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
+  o.start(); o.stop(actx.currentTime + dur);
+}
+function sndHalf()       { beep(880,.18,'triangle',.35); setTimeout(()=>beep(880,.18,'triangle',.35),220); }
+function sndCountdown(n) { beep(350+(n-1)*40,.09,'square',.28); }
+function sndStartCd(n)   { beep(220+(6-n)*80,.1,'triangle',.2+(6-n)*.04); }
+function sndGo()         { beep(1047,.08,'square',.5); setTimeout(()=>beep(1047,.08,'square',.5),90); setTimeout(()=>beep(1319,.3,'square',.5),180); }
+function sndEnd(last)    { last ? [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.25,'square',.3),i*120)) : (beep(660,.12,'square',.35),setTimeout(()=>beep(880,.22,'square',.4),130)); }
+
+// ── SPEECH ───────────────────────────────────────────────────
+let speechReady = false;
+function prewarmSpeech() {
+  if (speechReady || !window.speechSynthesis) return;
+  const u = new SpeechSynthesisUtterance(''); u.volume=0;
+  speechSynthesis.speak(u); speechReady=true;
+}
+function speak(text, opts={}) {
+  if (!window.speechSynthesis) return;
+  const delay = opts.delay ?? 0;
+  setTimeout(() => {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang='en-US'; u.rate=opts.rate??1.05; u.pitch=opts.pitch??1.1; u.volume=opts.vol??0.9;
+    speechSynthesis.speak(u);
+  }, delay);
+}
+
+// ── STATE ────────────────────────────────────────────────────
+let totalRounds=10, roundDuration=60;
+let currentRound=0, elapsed=0;
+let timerID=null, running=false, paused=false, halfFired=false;
+let inStartCd=false, startCdVal=0, startCdTotal=0;
+
+// ── DOM ──────────────────────────────────────────────────────
+const ringTime   = document.getElementById('ringTime');
+const ringLabel  = document.getElementById('ringLabel');
+const ringProg   = document.getElementById('ringProg');
+const ringHalf   = document.getElementById('ringHalf');
+const rRound     = document.getElementById('rRound');
+const rTotal     = document.getElementById('rTotal');
+const statusPill = document.getElementById('statusPill');
+const statusDot  = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const btnStart   = document.getElementById('btnStart');
+const btnPause   = document.getElementById('btnPause');
+const configCard = document.getElementById('configCard');
+const logWrap    = document.getElementById('logWrap');
+const logList    = document.getElementById('logList');
+const flash      = document.getElementById('flash');
+const togCountdown     = document.getElementById('togCountdown');
+const togHalfCountdown = document.getElementById('togHalfCountdown');
+const togStartCd       = document.getElementById('togStartCd');
+const startCdStepper   = document.getElementById('startCdStepper');
+
+const CIRCUM = 2 * Math.PI * 88;
+
+// ── HELPERS ──────────────────────────────────────────────────
+// Read the current CSS var value so ring colours respect theme
+function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+// ── STEPPERS ─────────────────────────────────────────────────
+function stepCfg(field, delta) {
+  const el = field==='rounds' ? document.getElementById('cfgRounds') : document.getElementById('cfgDuration');
+  el.value = Math.min(+el.max, Math.max(+el.min, +el.value + delta));
+}
+function stepStartCd(delta) {
+  const el = document.getElementById('cfgStartCd');
+  el.value = Math.min(+el.max, Math.max(+el.min, +el.value + delta));
+}
+function onToggleStartCd() {
+  startCdStepper.classList.toggle('hidden', !togStartCd.checked);
+}
+
+// ── RING ─────────────────────────────────────────────────────
+function isLight() { return window.matchMedia('(prefers-color-scheme: light)').matches; }
+function glow(color) { return `drop-shadow(0 0 ${isLight() ? '5px' : '8px'} ${color})`; }
+
+function drawRingProgress(el, total) {
+  const frac = Math.min(el/total, 1);
+  ringProg.style.strokeDasharray = `${frac*CIRCUM} ${CIRCUM}`;
+  const halfDash = .5*CIRCUM;
+  ringHalf.style.strokeDasharray = `1 ${halfDash-1} 0 ${CIRCUM-halfDash}`;
+  if (el >= total-5)     { const c=cssVar('--danger'); ringProg.style.stroke=c; ringProg.style.filter=glow(c); }
+  else if (el >= total/2){ const c=cssVar('--cyan');   ringProg.style.stroke=c; ringProg.style.filter=glow(c); }
+  else                   { const c=cssVar('--lime');   ringProg.style.stroke=c; ringProg.style.filter=glow(c); }
+}
+function drawRingCountdown(remain, total) {
+  ringProg.style.strokeDasharray = `${(remain/total)*CIRCUM} ${CIRCUM}`;
+  ringHalf.style.strokeDasharray = '0 1000';
+  const g = cssVar('--gold');
+  ringProg.style.stroke = g;
+  ringProg.style.filter = `drop-shadow(0 0 ${isLight() ? '5px' : '10px'} ${g})`;
+}
+
+// ── STATUS ───────────────────────────────────────────────────
+function setStatus(s) {
+  statusPill.className = 'status-pill ' + s;
+  statusDot.className  = 'dot' + (s==='running'||s==='countdown' ? ' pulse' : '');
+  statusText.textContent = {
+    '':'READY', running:'IN PROGRESS', half:'HALFWAY',
+    paused:'PAUSED', done:'DONE', countdown:'GET READY'
+  }[s] || 'READY';
+}
+function flash_(color) {
+  flash.style.background=color; flash.style.opacity='.15';
+  setTimeout(()=>flash.style.opacity='0', 180);
+}
+
+// ── LOG ──────────────────────────────────────────────────────
+function fmtSec(s) { const m=Math.floor(s/60); return m>0?`${m}:${String(s%60).padStart(2,'0')}`:`${s}s`; }
+function addLog(round, sec, total) {
+  const pct = Math.round(sec/total*100);
+  const el = document.createElement('div');
+  el.className='log-item';
+  el.innerHTML=`<div class="log-num">${String(round).padStart(2,'0')}</div><div class="log-bar-wrap"><div class="log-bar" style="width:0%"></div></div><div class="log-time">${fmtSec(sec)}</div>`;
+  logList.prepend(el);
+  requestAnimationFrame(()=>{
+    const b=el.querySelector('.log-bar');
+    b.style.width=pct+'%';
+    if(pct<50) b.style.background=cssVar('--danger');
+  });
+  logWrap.style.display='block';
+}
+
+// ── LOCK CONFIG ──────────────────────────────────────────────
+function lockConfig(on) {
+  configCard.style.opacity       = on ? '0.4' : '1';
+  configCard.style.pointerEvents = on ? 'none' : 'auto';
+}
+
+// ── START COUNTDOWN ──────────────────────────────────────────
+function initStartCd() {
+  startCdTotal = Math.max(5, +document.getElementById('cfgStartCd').value);
+  startCdVal   = startCdTotal;
+  ringLabel.textContent = 'STARTING IN';
+  ringTime.textContent  = String(startCdVal).padStart(2,'0');
+  ringTime.className    = 'ring-time go';
+  rRound.textContent    = '—';
+  rTotal.textContent    = totalRounds;
+  drawRingCountdown(startCdVal, startCdTotal);
+  setStatus('countdown');
+}
+function tickStartCd() {
+  startCdVal--;
+  if (startCdVal > 0) {
+    ringTime.textContent = String(startCdVal).padStart(2,'0');
+    drawRingCountdown(startCdVal, startCdTotal);
+    if (startCdVal <= 5) sndStartCd(startCdVal);
+  } else {
+    clearInterval(timerID); timerID=null; inStartCd=false;
+    flash_('#ffffff'); sndGo();
+    speak('Go!', {rate:1.1, pitch:1.3});
+    launchEmom(true);
+  }
+}
+
+// ── EMOM ─────────────────────────────────────────────────────
+function launchEmom(fromCountdown=false) {
+  running=true; paused=false;
+  startRound(1, fromCountdown);
+  timerID = setInterval(tickEmom, 1000);
+}
+function startRound(n, delaySpeak=false) {
+  currentRound=n; elapsed=0; halfFired=false;
+  rRound.textContent    = n;
+  rTotal.textContent    = totalRounds;
+  ringLabel.textContent = 'SECONDS';
+  ringTime.textContent  = String(roundDuration).padStart(2,'0');
+  ringTime.className    = 'ring-time';
+  drawRingProgress(0, roundDuration);
+  setStatus('running');
+  speak(`Round ${n}`, { delay: delaySpeak ? 600 : 0 });
+}
+function tickEmom() {
+  elapsed++;
+  const rem  = roundDuration - elapsed;
+  const half = Math.floor(roundDuration/2);
+  ringTime.textContent = String(rem).padStart(2,'0');
+  drawRingProgress(elapsed, roundDuration);
+  ringTime.className = rem<=5 ? 'ring-time end' : elapsed>=half ? 'ring-time half' : 'ring-time';
+  if (togCountdown.checked && rem>=1 && rem<=5) sndCountdown(rem);
+  if (!halfFired && elapsed===half) {
+    halfFired=true;
+    sndHalf(); flash_(cssVar('--cyan')); setStatus('half');
+    speak('Halfway', {rate:1.0, pitch:1.05});
+    setTimeout(()=>{ if(running) setStatus('running'); },1200);
+  }
+  const halfRemain = half - elapsed;
+  if (togHalfCountdown.checked && !halfFired && halfRemain>=1 && halfRemain<=5) sndCountdown(halfRemain);
+  if (elapsed >= roundDuration) {
+    const last = currentRound >= totalRounds;
+    addLog(currentRound, elapsed, roundDuration);
+    sndEnd(last); flash_(last ? cssVar('--lime') : cssVar('--danger'));
+    if (last) endSession(); else startRound(currentRound+1);
+  }
+}
+function endSession() {
+  clearInterval(timerID); timerID=null; running=false;
+  releaseWakeLock();
+  ringTime.textContent='✓'; ringTime.className='ring-time';
+  const lm = cssVar('--lime');
+  ringProg.style.stroke=lm; ringProg.style.strokeDasharray=`${CIRCUM} 0`;
+  ringProg.style.filter=glow(lm).replace('8px','14px');
+  setStatus('done'); speak('Workout complete!',{rate:.95,pitch:1});
+  btnStart.textContent='START'; btnStart.disabled=false;
+  btnPause.disabled=true; lockConfig(false);
+}
+
+// ── CONTROLS ─────────────────────────────────────────────────
+function startTimer() {
+  if (actx.state==='suspended') actx.resume();
+  prewarmSpeech();
+  if ((running||inStartCd) && !paused) return;
+  if (!running && !inStartCd) {
+    totalRounds   = Math.max(1,  +document.getElementById('cfgRounds').value   || 10);
+    roundDuration = Math.max(10, +document.getElementById('cfgDuration').value || 60);
+    logList.innerHTML=''; logWrap.style.display='none';
+    btnStart.disabled=true; btnPause.disabled=false; lockConfig(true);
+    if (togStartCd.checked) { inStartCd=true; initStartCd(); timerID=setInterval(tickStartCd,1000); requestWakeLock(); }
+    else                    { launchEmom(); requestWakeLock(); }
+  } else if (paused) {
+    paused=false; btnStart.disabled=true; btnStart.textContent='START';
+    if (inStartCd) { setStatus('countdown'); timerID=setInterval(tickStartCd,1000); requestWakeLock(); }
+    else           { setStatus('running');   timerID=setInterval(tickEmom,1000); requestWakeLock();    }
+  }
+}
+function pauseTimer() {
+  if ((!running&&!inStartCd)||paused) return;
+  clearInterval(timerID); timerID=null; paused=true;
+  releaseWakeLock();
+  btnStart.disabled=false; btnStart.textContent='RESUME';
+  setStatus('paused');
+}
+function resetTimer() {
+  clearInterval(timerID); timerID=null;
+  releaseWakeLock();
+  running=paused=inStartCd=false;
+  currentRound=elapsed=startCdVal=0; halfFired=false;
+  ringLabel.textContent = 'SECONDS';
+  ringTime.textContent  = '00'; ringTime.className='ring-time';
+  rRound.textContent='0'; rTotal.textContent='0';
+  const lm = cssVar('--lime');
+  ringProg.style.strokeDasharray=`0 ${CIRCUM}`;
+  ringProg.style.stroke=lm; ringProg.style.filter=glow(lm);
+  ringHalf.style.strokeDasharray='0 1000';
+  setStatus('');
+  btnStart.textContent='START'; btnStart.disabled=false;
+  btnPause.disabled=true; btnPause.textContent='II';
+  lockConfig(false);
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+drawRingProgress(0, 1); setStatus('');
+
+// ── SERVICE WORKER ────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
