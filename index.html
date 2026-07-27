@@ -503,29 +503,13 @@ footer {
         <div class="toggle-desc">Countdown before the EMOM begins</div>
       </div>
       <div class="toggle-right">
-        <div class="mini-stepper hidden" id="startCdStepper">
+        <div class="mini-stepper" id="startCdStepper">
           <button class="mini-btn" onclick="stepStartCd(-5)">−</button>
           <input class="mini-val" type="number" id="cfgStartCd" value="10" min="5" max="60" step="5" readonly>
           <button class="mini-btn" onclick="stepStartCd(+5)">+</button>
         </div>
         <label class="sw">
-          <input type="checkbox" id="togStartCd" onchange="onToggleStartCd()">
-          <div class="sw-track"></div><div class="sw-thumb"></div>
-        </label>
-      </div>
-    </div>
-
-    <div class="toggle-row">
-      <div class="toggle-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-      </div>
-      <div class="toggle-info">
-        <div class="toggle-title">Death by</div>
-        <div class="toggle-desc">No round limit — keep going until failure</div>
-      </div>
-      <div class="toggle-right">
-        <label class="sw">
-          <input type="checkbox" id="togDeathBy" onchange="onToggleDeathBy()">
+          <input type="checkbox" id="togStartCd" onchange="onToggleStartCd()" checked>
           <div class="sw-track"></div><div class="sw-thumb"></div>
         </label>
       </div>
@@ -557,7 +541,23 @@ footer {
       </div>
       <div class="toggle-right">
         <label class="sw">
-          <input type="checkbox" id="togHalfCountdown">
+          <input type="checkbox" id="togHalfCountdown" checked>
+          <div class="sw-track"></div><div class="sw-thumb"></div>
+        </label>
+      </div>
+    </div>
+
+    <div class="toggle-row">
+      <div class="toggle-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 4a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V19a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"/><line x1="9" y1="17" x2="9" y2="19"/><line x1="12" y1="17" x2="12" y2="19"/><line x1="15" y1="17" x2="15" y2="19"/><circle cx="9" cy="11" r="1" fill="currentColor"/><circle cx="15" cy="11" r="1" fill="currentColor"/></svg>
+      </div>
+      <div class="toggle-info">
+        <div class="toggle-title">Death by</div>
+        <div class="toggle-desc">No round limit — keep going until failure</div>
+      </div>
+      <div class="toggle-right">
+        <label class="sw">
+          <input type="checkbox" id="togDeathBy" onchange="onToggleDeathBy()">
           <div class="sw-track"></div><div class="sw-thumb"></div>
         </label>
       </div>
@@ -911,7 +911,7 @@ function resetTimer() {
 }
 
 // ── VERSION ───────────────────────────────────────────────────
-const APP_VERSION = '1.2';
+const APP_VERSION = '1.3.0';
 document.getElementById('footerVersion').textContent = 'v' + APP_VERSION;
 
 // ── INIT ──────────────────────────────────────────────────────
