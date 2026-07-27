@@ -201,12 +201,16 @@ main {
 .config-grid {
   display: grid; grid-template-columns: 1fr 1fr; gap: 0;
 }
+.config-grid.death-by .rounds-field { grid-area: 1 / 1 / 2 / 2; }
+.config-grid.death-by .cfg-cell:not(.rounds-field) { grid-area: 1 / 1 / 2 / 3; border-right: none; }
 .cfg-cell {
   padding: 16px 18px;
   display: flex; flex-direction: column; gap: 10px;
   border-right: 1px solid var(--border);
 }
 .cfg-cell:last-child { border-right: none; }
+.cfg-cell.error .cfg-label { color: var(--coral); }
+.cfg-cell.error .stepper-val { color: var(--coral); background: var(--coral-dim); border-radius: 4px; }
 .cfg-label {
   font-size: .6rem; font-weight: 700;
   letter-spacing: .22em; color: var(--muted);
@@ -460,7 +464,7 @@ footer {
 
   <!-- CONFIG -->
   <div class="card" id="configCard">
-    <div class="config-grid">
+    <div class="config-grid" id="configGrid">
       <div class="cfg-cell rounds-field" id="roundsField">
         <div class="cfg-label">Rounds</div>
         <div class="stepper">
@@ -473,7 +477,7 @@ footer {
         <div class="cfg-label">Duration (sec)</div>
         <div class="stepper">
           <button class="stepper-btn" onclick="stepCfg('duration',-5)">−</button>
-          <input class="stepper-val" type="number" id="cfgDuration" value="60" min="10" max="300">
+          <input class="stepper-val" type="number" id="cfgDuration" value="60" min="10" max="300" oninput="validateDuration()">
           <button class="stepper-btn" onclick="stepCfg('duration',+5)">+</button>
         </div>
       </div>
@@ -489,7 +493,7 @@ footer {
       <div class="toggle-right">
         <div class="mini-stepper" id="startCdStepper">
           <button class="mini-btn" onclick="stepStartCd(-5)">−</button>
-          <input class="mini-val" type="number" id="cfgStartCd" value="10" min="5" max="60" step="5" readonly>
+          <input class="mini-val" type="number" id="cfgStartCd" value="5" min="5" max="60" step="5" readonly>
           <button class="mini-btn" onclick="stepStartCd(+5)">+</button>
         </div>
         <label class="sw">
@@ -741,8 +745,17 @@ function stepStartCd(delta) {
   const el = document.getElementById('cfgStartCd');
   el.value = Math.min(+el.max, Math.max(+el.min, +el.value+delta));
 }
+function validateDuration() {
+  const el = document.getElementById('cfgDuration');
+  const v = +el.value;
+  el.closest('.cfg-cell').classList.toggle('error', !el.value || v < +el.min || v > +el.max);
+}
 function onToggleStartCd()  { startCdStepper.classList.toggle('hidden', !togStartCd.checked); }
-function onToggleDeathBy()  { roundsField.classList.toggle('hidden', togDeathBy.checked); }
+function onToggleDeathBy()  {
+  const on = togDeathBy.checked;
+  roundsField.classList.toggle('hidden', on);
+  document.getElementById('configGrid').classList.toggle('death-by', on);
+}
 
 // ── RING ──────────────────────────────────────────────────────
 function drawRingProgress(el, total) {
@@ -872,8 +885,14 @@ function startTimer() {
   prewarmSpeech();
   if ((running||inStartCd)&&!paused) return;
   if (!running&&!inStartCd) {
+    const durEl = document.getElementById('cfgDuration');
+    const durVal = +durEl.value;
+    if (!durEl.value || durVal < +durEl.min || durVal > +durEl.max) {
+      durEl.closest('.cfg-cell').classList.add('error');
+      return;
+    }
     totalRounds  =togDeathBy.checked?Infinity:Math.max(1,+document.getElementById('cfgRounds').value||10);
-    roundDuration=Math.max(10,+document.getElementById('cfgDuration').value||60);
+    roundDuration=durVal;
     logList.innerHTML=''; logWrap.style.display='none';
     btnStart.disabled=true; btnPause.disabled=false; lockConfig(true);
     if (togStartCd.checked) { inStartCd=true; initStartCd(); timerID=setInterval(tickStartCd,1000); requestWakeLock(); }
@@ -910,7 +929,7 @@ function resetTimer() {
 }
 
 // ── VERSION ───────────────────────────────────────────────────
-const APP_VERSION = '1.3.1';
+const APP_VERSION = '1.3.2';
 document.getElementById('footerVersion').textContent = 'v' + APP_VERSION;
 
 // ── INIT ──────────────────────────────────────────────────────
