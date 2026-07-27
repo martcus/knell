@@ -1,12 +1,12 @@
 {
   "name": "Knell",
   "short_name": "Knell",
-  "description": "Knell — EMOM Kettlebell Timer",
+  "description": "Yet Another EMOM Timer for kettlebell training",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0D0D0F",
-  "theme_color": "#0D0D0F",
+  "background_color": "#121315",
+  "theme_color": "#121315",
   "icons": [
     {
       "src": "icon-192.png",

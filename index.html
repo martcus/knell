@@ -1,341 +1,601 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Knell</title>
-<meta name="description" content="Knell – EMOM kettlebell timer with round announcements, countdown beeps, and offline support">
-<meta name="theme-color" content="#0D0D0F" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="description" content="Knell – Yet Another EMOM Timer for kettlebell training">
+<meta name="theme-color" content="#121315" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F4F5F7" media="(prefers-color-scheme: light)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Knell">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+* { -webkit-tap-highlight-color: transparent; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: inherit; }
 
-  /* remove browser default blue tap flash on mobile */
-  * { -webkit-tap-highlight-color: transparent; }
+/* ── DARK THEME ─────────────────────────────────────────── */
+:root {
+  --bg:          #121315;
+  --surface:     #1C1D21;
+  --surface2:    #26272D;
+  --border:      #2A2C32;
+  --accent:      #B0FF00;
+  --accent-dim:  rgba(176,255,0,.12);
+  --accent-glow: rgba(176,255,0,.35);
+  --accent-text: #0E1000;
+  --mint:        #33E0A1;
+  --mint-dim:    rgba(51,224,161,.12);
+  --coral:       #FF4D4D;
+  --coral-dim:   rgba(255,77,77,.12);
+  --gold:        #FFB800;
+  --gold-dim:    rgba(255,184,0,.12);
+  --text:        #FFFFFF;
+  --text2:       #C4C6CC;
+  --muted:       #8E929B;
+  --ring-track:  #26272D;
+  --ring-size:   min(300px, 72vw);
+  --radius-card: 20px;
+  --shadow-card: none;
+}
 
-  /* buttons: custom focus ring instead of browser default */
-  button:focus-visible {
-    outline: 2px solid var(--lime);
-    outline-offset: 2px;
-    border-radius: inherit;
-  }
-
-  /* ── DARK THEME (default) ───────────────────────────── */
+/* ── LIGHT THEME ────────────────────────────────────────── */
+@media (prefers-color-scheme: light) {
   :root {
-    --bg:       #0D0D0F;
-    --surface:  #1A1A1F;
-    --surface2: #252528;
-    --border:   #2e2e33;
-    --lime:     #C6FF00;
-    --lime-dim: rgba(198,255,0,.12);
-    --cyan:     #00E5FF;
-    --cyan-dim: rgba(0,229,255,.12);
-    --danger:   #FF4D6D;
-    --danger-dim:rgba(255,77,109,.12);
-    --gold:     #FFD000;
-    --gold-dim: rgba(255,208,0,.12);
-    --text:     #F0F0F0;
-    --text2:    #B0B0B8;
-    --muted:    #6B6B72;
-    --ring-size: min(340px, 78vw);
-    --shadow-start: rgba(0,0,0,.0);
-    --btn-secondary-hover: #2e2e33;
-    --lime-btn-text: #0D0D0F;
+    --bg:          #F4F5F7;
+    --surface:     #FFFFFF;
+    --surface2:    #ECEEF2;
+    --border:      #E2E4E9;
+    --accent:      #0F8B4C;
+    --accent-dim:  rgba(15,139,76,.10);
+    --accent-glow: rgba(15,139,76,.25);
+    --accent-text: #FFFFFF;
+    --mint:        #0077CC;
+    --mint-dim:    rgba(0,119,204,.10);
+    --coral:       #E03030;
+    --coral-dim:   rgba(224,48,48,.10);
+    --gold:        #B06000;
+    --gold-dim:    rgba(176,96,0,.10);
+    --text:        #18191C;
+    --text2:       #3E4149;
+    --muted:       #6C727F;
+    --ring-track:  #E2E4E9;
+    --shadow-card: 0 4px 20px rgba(0,0,0,.04);
   }
+  .card { box-shadow: var(--shadow-card); border: 1px solid var(--border); }
+  .btn-start { box-shadow: 0 4px 20px var(--accent-glow) !important; }
+  .btn-start:hover { box-shadow: 0 6px 28px var(--accent-glow) !important; }
+  .sw-track-on { background: rgba(15,139,76,.25) !important; }
+  .sw-thumb-on { background: var(--accent) !important; }
+}
 
-  /* ── LIGHT THEME ────────────────────────────────────── */
-  @media (prefers-color-scheme: light) {
-    :root {
-      --bg:       #F2F2F7;
-      --surface:  #FFFFFF;
-      --surface2: #E5E5EA;
-      --border:   #D1D1D6;
-      --lime:     #5A8A00;
-      --lime-dim: rgba(90,138,0,.10);
-      --cyan:     #007AFF;
-      --cyan-dim: rgba(0,122,255,.10);
-      --danger:   #FF3B30;
-      --danger-dim:rgba(255,59,48,.10);
-      --gold:     #B8860B;
-      --gold-dim: rgba(184,134,11,.10);
-      --text:     #1C1C1E;
-      --text2:    #3A3A3C;
-      --muted:    #8E8E93;
-      --shadow-start: rgba(0,0,0,.06);
-      --btn-secondary-hover: #D1D1D6;
-      --lime-btn-text: #FFFFFF;
-    }
-    /* ring glow softer on light */
-    .ring-prog { filter: drop-shadow(0 0 5px var(--lime)); }
-    /* card shadow instead of border blending */
-    .config-card, .toggle-card {
-      box-shadow: 0 1px 4px var(--shadow-start), 0 4px 16px rgba(0,0,0,.06);
-    }
-    .btn-start {
-      filter: drop-shadow(0 2px 8px rgba(90,138,0,.25)) !important;
-    }
-    .btn-start:hover {
-      filter: drop-shadow(0 2px 14px rgba(90,138,0,.4)) !important;
-    }
-    .status-pill.running  { background: var(--lime-dim);   color: var(--lime);   }
-    .status-pill.half     { background: var(--cyan-dim);   color: var(--cyan);   }
-    .status-pill.done     { background: var(--danger-dim); color: var(--danger); }
-    .status-pill.countdown{ background: var(--gold-dim);   color: var(--gold);   }
-    .switch input:checked ~ .switch-track { background: rgba(90,138,0,.3); }
-    .switch input:checked ~ .switch-thumb { background: var(--lime); box-shadow: 0 0 6px rgba(90,138,0,.4); }
-    .log-num { color: var(--lime); }
-    .log-bar  { background: var(--lime); }
-  }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Inter', sans-serif;
+  min-height: 100dvh;
+  display: flex; flex-direction: column; align-items: center;
+  overflow-x: hidden;
+  transition: background .3s, color .3s;
+}
 
-  body {
-    background: var(--bg); color: var(--text);
-    font-family: 'Inter', sans-serif;
-    min-height: 100dvh;
-    display: flex; flex-direction: column; align-items: center;
-    overflow-x: hidden;
-    transition: background .3s, color .3s;
-  }
-  header {
-    width: 100%; max-width: 480px;
-    padding: 28px 24px 0;
-    display: flex; align-items: baseline; gap: 10px;
-  }
-  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; letter-spacing: .12em; color: var(--lime); line-height: 1; }
-  .logo-sub { font-size: .58rem; font-weight: 500; letter-spacing: .18em; color: var(--muted); text-transform: uppercase; white-space: nowrap; }
-  main {
-    width: 100%; max-width: 480px;
-    padding: 24px 24px 40px;
-    display: flex; flex-direction: column; align-items: center; gap: 28px; flex: 1;
-  }
+/* ── HEADER ─────────────────────────────────────────────── */
+header {
+  width: 100%; max-width: 480px;
+  padding: 28px 24px 0;
+  display: flex; align-items: center; gap: 10px;
+}
+.logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.2rem; letter-spacing: .1em;
+  color: var(--accent); line-height: 1;
+}
+.logo-sub {
+  font-size: .52rem; font-weight: 600;
+  letter-spacing: .22em; color: var(--muted);
+  text-transform: uppercase; white-space: nowrap;
+  align-self: flex-end; padding-bottom: 3px;
+}
 
-  /* ── RING ─────────────────────────────────────────────── */
-  .ring-wrap { position: relative; width: var(--ring-size); height: var(--ring-size); flex-shrink: 0; }
-  .ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-  .ring-bg   { fill: none; stroke: var(--surface2); stroke-width: 6; }
-  .ring-half { fill: none; stroke: var(--cyan); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 0 1000; opacity: .35; transition: stroke-dasharray .3s ease; }
-  .ring-prog { fill: none; stroke: var(--lime); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 0 1000; transition: stroke-dasharray .25s linear, stroke .3s; filter: drop-shadow(0 0 8px var(--lime)); }
-  .ring-inner { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
-  .ring-time  { font-family: 'Bebas Neue', sans-serif; font-size: clamp(4.5rem, 20vw, 5.5rem); line-height: 1; letter-spacing: .03em; color: var(--text); transition: color .3s; }
-  .ring-time.half { color: var(--cyan); }
-  .ring-time.end  { color: var(--danger); }
-  .ring-time.go   { color: var(--gold); }
-  .ring-label { font-size: .65rem; font-weight: 600; letter-spacing: .25em; color: var(--muted); text-transform: uppercase; }
-  .ring-round { margin-top: 6px; font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: .1em; color: var(--muted); }
-  .ring-round span { color: var(--text); }
+/* ── MAIN ───────────────────────────────────────────────── */
+main {
+  width: 100%; max-width: 480px;
+  padding: 20px 20px 40px;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 16px; flex: 1;
+}
 
-  /* ── STATUS PILL ──────────────────────────────────────── */
-  .status-pill { display: inline-flex; align-items: center; gap: 7px; padding: 6px 14px; border-radius: 100px; background: var(--surface); font-size: .72rem; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); transition: background .3s, color .3s; }
-  .status-pill.running  { background: var(--lime-dim);    color: var(--lime);   }
-  .status-pill.half     { background: var(--cyan-dim);    color: var(--cyan);   }
-  .status-pill.done     { background: var(--danger-dim);  color: var(--danger); }
-  .status-pill.countdown{ background: var(--gold-dim);    color: var(--gold);   }
-  .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-  .dot.pulse { animation: pulse 1s ease-in-out infinite; }
-  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+/* ── STATUS PILL ────────────────────────────────────────── */
+.status-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 16px; border-radius: 100px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: .68rem; font-weight: 600;
+  letter-spacing: .2em; text-transform: uppercase;
+  color: var(--muted);
+  transition: background .25s, color .25s, border-color .25s;
+}
+.status-pill.running   { background: var(--accent-dim);  color: var(--accent); border-color: var(--accent); }
+.status-pill.half      { background: var(--mint-dim);    color: var(--mint);   border-color: var(--mint); }
+.status-pill.done      { background: var(--coral-dim);   color: var(--coral);  border-color: var(--coral); }
+.status-pill.countdown { background: var(--gold-dim);    color: var(--gold);   border-color: var(--gold); }
+.status-pill.paused    { background: var(--surface2);    color: var(--muted);  border-color: var(--border); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.dot.pulse { animation: pulse 1.1s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.65)} }
 
-  /* ── CONTROLS ─────────────────────────────────────────── */
-  .controls { width: 100%; display: flex; gap: 12px; }
-  .btn { flex: 1; height: 56px; border: none; border-radius: 14px; font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: .12em; cursor: pointer; transition: transform .12s, filter .2s, background .2s, color .2s; }
-  .btn:active { transform: scale(.96); }
-  .btn-start { background: var(--lime); color: var(--lime-btn-text); flex: 2; filter: drop-shadow(0 0 18px rgba(198,255,0,.3)); }
-  .btn-start:hover { filter: drop-shadow(0 0 28px rgba(198,255,0,.55)); }
-  .btn-start:disabled { background: var(--surface2); color: var(--muted); filter: none; cursor: not-allowed; }
-  .btn-pause { background: var(--surface2); color: var(--text); }
-  .btn-pause:hover { background: var(--btn-secondary-hover); }
-  .btn-reset { background: var(--surface2); color: var(--muted); }
-  .btn-reset:hover { color: var(--danger); }
+/* ── RING ───────────────────────────────────────────────── */
+.ring-wrap {
+  position: relative;
+  width: var(--ring-size); height: var(--ring-size);
+  flex-shrink: 0;
+}
+.ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring-bg   { fill: none; stroke: var(--ring-track); stroke-width: 10; }
+.ring-half {
+  fill: none; stroke: var(--mint); stroke-width: 3;
+  stroke-linecap: round; stroke-dasharray: 0 1000;
+  opacity: .4; transition: stroke-dasharray .3s ease;
+}
+.ring-prog {
+  fill: none; stroke: var(--accent); stroke-width: 11;
+  stroke-linecap: round; stroke-dasharray: 0 1000;
+  transition: stroke-dasharray .25s linear, stroke .3s;
+}
+.ring-inner {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0px;
+}
+.ring-label {
+  font-size: .6rem; font-weight: 700;
+  letter-spacing: .28em; color: var(--muted);
+  text-transform: uppercase;
+}
+.ring-time {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(4.8rem, 22vw, 6rem);
+  line-height: .95; letter-spacing: .02em;
+  color: var(--text); transition: color .25s;
+}
+.ring-time.half { color: var(--mint); }
+.ring-time.end  { color: var(--coral); }
+.ring-time.go   { color: var(--gold); }
 
-  /* ── CONFIG CARD ──────────────────────────────────────── */
-  .config-card { width: 100%; background: var(--surface); border-radius: 18px; padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .cfg-field { display: flex; flex-direction: column; gap: 8px; }
-  .cfg-field label { font-size: .68rem; font-weight: 600; letter-spacing: .22em; color: var(--muted); text-transform: uppercase; }
-  .stepper { display: flex; align-items: center; background: var(--surface2); border-radius: 10px; overflow: hidden; height: 44px; }
-  .stepper button { width: 40px; height: 100%; background: transparent; border: none; color: var(--muted); font-size: 1.3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color .2s, background .2s; flex-shrink: 0; }
-  .stepper button:hover { color: var(--lime); background: var(--lime-dim); }
-  .stepper input { flex: 1; background: transparent; border: none; color: var(--text); font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: .05em; text-align: center; width: 0; -moz-appearance: textfield; }
-  .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; }
-  .stepper input:focus { outline: none; }
 
-  /* ── TOGGLE CARD ──────────────────────────────────────── */
-  .toggle-card { width: 100%; background: var(--surface); border-radius: 18px; padding: 16px 20px; display: flex; flex-direction: column; }
-  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--surface2); }
-  .toggle-row:last-child { border-bottom: none; }
-  .toggle-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-  .toggle-label { font-size: .82rem; font-weight: 500; color: var(--text); }
-  .toggle-desc  { font-size: .68rem; color: var(--muted); letter-spacing: .04em; }
-  .toggle-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-left: 12px; }
+/* ── CONTROLS ───────────────────────────────────────────── */
+.controls { width: 100%; display: flex; gap: 10px; align-items: center; }
 
-  /* ── MINI STEPPER ─────────────────────────────────────── */
-  .mini-stepper { display: flex; align-items: center; background: var(--surface2); border-radius: 8px; overflow: hidden; height: 34px; max-width: 110px; transition: max-width .3s cubic-bezier(.4,0,.2,1), opacity .2s; }
-  .mini-stepper.hidden { max-width: 0; opacity: 0; pointer-events: none; }
-  .mini-stepper button { width: 30px; height: 100%; background: transparent; border: none; color: var(--muted); font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color .15s, background .15s; flex-shrink: 0; }
-  .mini-stepper button:hover { color: var(--gold); background: var(--gold-dim); }
-  .mini-stepper input { width: 34px; background: transparent; border: none; color: var(--text); font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: .04em; text-align: center; -moz-appearance: textfield; }
-  .mini-stepper input::-webkit-outer-spin-button, .mini-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; }
-  .mini-stepper input:focus { outline: none; }
+.btn-icon {
+  width: 56px; height: 56px; flex-shrink: 0;
+  border: none; border-radius: 16px;
+  background: var(--surface2);
+  color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background .2s, color .2s, transform .1s;
+  border: 1px solid var(--border);
+}
+.btn-icon:hover { color: var(--text); background: var(--border); }
+.btn-icon:active { transform: scale(.93); }
+.btn-icon svg { width: 20px; height: 20px; stroke-width: 2; }
+.btn-icon.danger:hover { color: var(--coral); }
 
-  /* ── SWITCH ───────────────────────────────────────────── */
-  .switch { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
-  .switch input { opacity: 0; width: 0; height: 0; }
-  .switch-track { position: absolute; inset: 0; border-radius: 13px; background: var(--surface2); transition: background .25s; cursor: pointer; }
-  .switch-thumb { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--muted); transition: transform .25s cubic-bezier(.4,0,.2,1), background .25s; pointer-events: none; }
-  .switch input:checked ~ .switch-track { background: rgba(198,255,0,.25); }
-  .switch input:checked ~ .switch-thumb { transform: translateX(18px); background: var(--lime); box-shadow: 0 0 8px rgba(198,255,0,.5); }
+.btn-start {
+  flex: 1; height: 56px;
+  border: none; border-radius: 16px;
+  background: var(--accent); color: var(--accent-text);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.35rem; letter-spacing: .14em;
+  cursor: pointer;
+  box-shadow: 0 0 24px var(--accent-glow);
+  transition: box-shadow .2s, transform .1s, background .2s, color .2s;
+}
+.btn-start:hover { box-shadow: 0 0 36px var(--accent-glow); }
+.btn-start:active { transform: scale(.96); }
+.btn-start:disabled {
+  background: var(--surface2); color: var(--muted);
+  box-shadow: none; cursor: not-allowed;
+  border: 1px solid var(--border);
+}
 
-  /* ── LOG ──────────────────────────────────────────────── */
-  .log-wrap { width: 100%; }
-  .log-title { font-size: .68rem; font-weight: 600; letter-spacing: .22em; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
-  .log-list { display: flex; flex-direction: column; gap: 6px; max-height: 140px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--surface2) transparent; }
-  .log-item { display: flex; align-items: center; gap: 10px; padding: 9px 14px; background: var(--surface); border-radius: 10px; font-size: .8rem; animation: slideIn .3s ease; }
-  @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
-  .log-num { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; color: var(--lime); min-width: 28px; }
-  .log-bar-wrap { flex: 1; height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
-  .log-bar { height: 100%; background: var(--lime); border-radius: 2px; transition: width .5s ease; }
-  .log-time { font-family: 'Bebas Neue', sans-serif; font-size: .9rem; color: var(--muted); min-width: 36px; text-align: right; }
+/* ── CARD ───────────────────────────────────────────────── */
+.card {
+  width: 100%; background: var(--surface);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
 
-  /* ── FLASH ────────────────────────────────────────────── */
-  #flash { pointer-events: none; position: fixed; inset: 0; opacity: 0; transition: opacity .08s; z-index: 99; }
+/* ── CONFIG CARD ────────────────────────────────────────── */
+.config-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+}
+.cfg-cell {
+  padding: 16px 18px;
+  display: flex; flex-direction: column; gap: 10px;
+  border-right: 1px solid var(--border);
+}
+.cfg-cell:last-child { border-right: none; }
+.cfg-label {
+  font-size: .6rem; font-weight: 700;
+  letter-spacing: .22em; color: var(--muted);
+  text-transform: uppercase;
+}
+.rounds-field { transition: opacity .25s, max-height .3s cubic-bezier(.4,0,.2,1); max-height: 100px; overflow: hidden; }
+.rounds-field.hidden { opacity: 0; max-height: 0; pointer-events: none; }
 
-  @media (prefers-reduced-motion: reduce) {
-    .ring-prog, .ring-half { transition: none; }
-    .dot.pulse { animation: none; }
-  }
+.stepper { display: flex; align-items: center; gap: 0; height: 48px; }
+.stepper-btn {
+  width: 44px; height: 44px; flex-shrink: 0;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--surface2); color: var(--muted);
+  font-size: 1.4rem; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background .15s, color .15s, transform .1s;
+}
+.stepper-btn:hover { background: var(--border); color: var(--accent); }
+.stepper-btn:active { transform: scale(.9); }
+.stepper-val {
+  flex: 1; text-align: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.9rem; letter-spacing: .04em;
+  color: var(--text);
+  background: transparent; border: none;
+  -moz-appearance: textfield;
+}
+.stepper-val::-webkit-outer-spin-button,
+.stepper-val::-webkit-inner-spin-button { -webkit-appearance: none; }
+.stepper-val:focus { outline: none; }
+
+/* ── SETTINGS COLLAPSIBLE ───────────────────────────────── */
+.settings-trigger {
+  width: 100%;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: background .2s, color .2s, border-color .2s;
+}
+.settings-trigger:hover {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--muted);
+}
+.settings-trigger-left {
+  display: flex; align-items: center; gap: 8px;
+  font-size: .72rem; font-weight: 600;
+  letter-spacing: .16em; text-transform: uppercase;
+}
+.settings-trigger-left svg { width: 14px; height: 14px; stroke-width: 2; flex-shrink: 0; }
+.settings-chevron {
+  width: 16px; height: 16px; stroke-width: 2; flex-shrink: 0;
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+}
+.settings-chevron.open { transform: rotate(180deg); }
+
+.settings-body {
+  width: 100%;
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows .32s cubic-bezier(.4,0,.2,1);
+}
+.settings-body.open { grid-template-rows: 1fr; }
+.settings-body-inner { overflow: hidden; }
+
+/* ── TOGGLE CARD ────────────────────────────────────────── */
+.toggle-row {
+  display: flex; align-items: center;
+  padding: 14px 18px; gap: 14px;
+  border-bottom: 1px solid var(--border);
+  transition: background .15s;
+}
+.toggle-row:last-child { border-bottom: none; }
+.toggle-icon {
+  width: 32px; height: 32px; flex-shrink: 0;
+  border-radius: 9px; background: var(--surface2);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted);
+}
+.toggle-icon svg { width: 15px; height: 15px; stroke-width: 2; }
+.toggle-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.toggle-title { font-size: .82rem; font-weight: 600; color: var(--text); }
+.toggle-desc  { font-size: .67rem; color: var(--muted); }
+.toggle-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+/* mini stepper inside toggle row */
+.mini-stepper {
+  display: flex; align-items: center; gap: 0;
+  max-width: 108px;
+  transition: max-width .3s cubic-bezier(.4,0,.2,1), opacity .2s;
+}
+.mini-stepper.hidden { max-width: 0; opacity: 0; pointer-events: none; overflow: hidden; }
+.mini-btn {
+  width: 30px; height: 30px; flex-shrink: 0;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface2); color: var(--muted);
+  font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background .15s, color .15s;
+}
+.mini-btn:hover { color: var(--gold); background: var(--gold-dim); }
+.mini-val {
+  width: 36px; text-align: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.15rem; color: var(--text);
+  background: transparent; border: none;
+  -moz-appearance: textfield;
+}
+.mini-val::-webkit-outer-spin-button,
+.mini-val::-webkit-inner-spin-button { -webkit-appearance: none; }
+.mini-val:focus { outline: none; }
+
+/* ── SWITCH ─────────────────────────────────────────────── */
+.sw { position: relative; width: 46px; height: 27px; flex-shrink: 0; cursor: pointer; }
+.sw input { opacity: 0; width: 0; height: 0; position: absolute; }
+.sw-track {
+  position: absolute; inset: 0; border-radius: 14px;
+  background: var(--surface2); border: 1px solid var(--border);
+  transition: background .25s, border-color .25s;
+}
+.sw-thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 21px; height: 21px; border-radius: 50%;
+  background: var(--muted);
+  transition: transform .25s cubic-bezier(.4,0,.2,1), background .25s, box-shadow .25s;
+  pointer-events: none;
+}
+.sw input:checked ~ .sw-track {
+  background: rgba(176,255,0,.2);
+  border-color: rgba(176,255,0,.4);
+}
+.sw input:checked ~ .sw-thumb {
+  transform: translateX(19px);
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* ── LOG ────────────────────────────────────────────────── */
+.log-wrap { width: 100%; }
+.log-title {
+  font-size: .62rem; font-weight: 700;
+  letter-spacing: .22em; color: var(--muted);
+  text-transform: uppercase; margin-bottom: 10px;
+  padding-left: 2px;
+}
+.log-list {
+  display: flex; flex-direction: column; gap: 6px;
+  max-height: 160px; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: var(--surface2) transparent;
+}
+.log-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px; background: var(--surface);
+  border-radius: 12px; border: 1px solid var(--border);
+  animation: slideIn .3s ease;
+}
+@keyframes slideIn { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:translateY(0)} }
+.log-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1rem; color: var(--accent); min-width: 26px;
+}
+.log-bar-wrap { flex: 1; height: 3px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+.log-bar { height: 100%; background: var(--accent); border-radius: 2px; transition: width .5s ease; }
+.log-time {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: .88rem; color: var(--muted);
+  min-width: 34px; text-align: right;
+}
+
+/* ── FLASH ──────────────────────────────────────────────── */
+#flash { pointer-events: none; position: fixed; inset: 0; opacity: 0; transition: opacity .08s; z-index: 99; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ring-prog, .ring-half { transition: none; }
+  .dot.pulse { animation: none; }
+}
+
+/* ── ROUND SEGMENTS ─────────────────────────────────────── */
+/* drawn via JS as <circle> arcs on r=62 */
+.seg-done    { fill: none; stroke: var(--accent); opacity: .25; transition: stroke .3s; }
+.seg-current { fill: none; stroke: var(--accent); opacity: .75; transition: stroke .3s; }
+.seg-next    { fill: none; stroke: var(--muted);  opacity: .18; }
 </style>
 </head>
 <body>
+
 <header>
   <div class="logo">Knell</div>
-  <div class="logo-sub">Yet Another EMOM Timer - v1.0</div>
+  <div class="logo-sub">Yet Another EMOM Timer - v1.1</div>
 </header>
+
 <main>
+
+  <!-- STATUS -->
   <div class="status-pill" id="statusPill">
     <div class="dot" id="statusDot"></div>
     <span id="statusText">READY</span>
   </div>
+
+  <!-- RING -->
   <div class="ring-wrap">
     <svg viewBox="0 0 200 200">
-      <circle class="ring-bg"   cx="100" cy="100" r="88"/>
-      <circle class="ring-half" cx="100" cy="100" r="88" id="ringHalf"/>
-      <circle class="ring-prog" cx="100" cy="100" r="88" id="ringProg"/>
+      <defs>
+        <filter id="ringGlow" x="-25%" y="-25%" width="150%" height="150%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <circle class="ring-bg"   cx="100" cy="100" r="86"/>
+      <circle class="ring-half" cx="100" cy="100" r="86" id="ringHalf"/>
+      <circle class="ring-prog" cx="100" cy="100" r="86" id="ringProg" filter="url(#ringGlow)"/>
+      <!-- inner round-progress segments (drawn by JS) -->
+      <g id="roundSegs" transform="rotate(-90 100 100)"></g>
     </svg>
     <div class="ring-inner">
       <div class="ring-label" id="ringLabel">SECONDS</div>
-      <div class="ring-time" id="ringTime">00</div>
-      <div class="ring-round">ROUND <span id="rRound">0</span>/<span id="rTotal">0</span></div>
+      <div class="ring-time"  id="ringTime">00</div>
     </div>
   </div>
+
+  <!-- CONTROLS -->
   <div class="controls">
-    <button class="btn btn-reset" onclick="resetTimer()">↺</button>
-    <button class="btn btn-start" id="btnStart" onclick="startTimer()">START</button>
-    <button class="btn btn-pause" id="btnPause" onclick="pauseTimer()" disabled>II</button>
+    <button class="btn-icon danger" onclick="resetTimer()" title="Reset">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+    </button>
+    <button class="btn-start" id="btnStart" onclick="startTimer()">START</button>
+    <button class="btn-icon" id="btnPause" onclick="pauseTimer()" disabled title="Pause">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+    </button>
   </div>
-  <div class="config-card" id="configCard">
-    <div class="cfg-field">
-      <label>Rounds</label>
-      <div class="stepper">
-        <button onclick="stepCfg('rounds',-1)">−</button>
-        <input type="number" id="cfgRounds" value="10" min="1" max="99">
-        <button onclick="stepCfg('rounds',+1)">+</button>
+
+  <!-- CONFIG -->
+  <div class="card" id="configCard">
+    <div class="config-grid">
+      <div class="cfg-cell rounds-field" id="roundsField">
+        <div class="cfg-label">Rounds</div>
+        <div class="stepper">
+          <button class="stepper-btn" onclick="stepCfg('rounds',-1)">−</button>
+          <input class="stepper-val" type="number" id="cfgRounds" value="10" min="1" max="99">
+          <button class="stepper-btn" onclick="stepCfg('rounds',+1)">+</button>
+        </div>
       </div>
-    </div>
-    <div class="cfg-field">
-      <label>Duration (sec)</label>
-      <div class="stepper">
-        <button onclick="stepCfg('duration',-5)">−</button>
-        <input type="number" id="cfgDuration" value="60" min="10" max="300">
-        <button onclick="stepCfg('duration',+5)">+</button>
+      <div class="cfg-cell">
+        <div class="cfg-label">Duration (sec)</div>
+        <div class="stepper">
+          <button class="stepper-btn" onclick="stepCfg('duration',-5)">−</button>
+          <input class="stepper-val" type="number" id="cfgDuration" value="60" min="10" max="300">
+          <button class="stepper-btn" onclick="stepCfg('duration',+5)">+</button>
+        </div>
       </div>
     </div>
   </div>
-  <div class="toggle-card">
-    <div class="toggle-row">
-      <div class="toggle-info">
-        <div class="toggle-label">End-of-round countdown</div>
-        <div class="toggle-desc">Beep each second in the last 5s</div>
-      </div>
-      <div class="toggle-right">
-        <label class="switch">
-          <input type="checkbox" id="togCountdown" checked>
-          <div class="switch-track"></div><div class="switch-thumb"></div>
-        </label>
-      </div>
+
+  <!-- SETTINGS TRIGGER -->
+  <button class="settings-trigger" id="settingsTrigger" onclick="toggleSettings()">
+    <div class="settings-trigger-left">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07M4.93 4.93a10 10 0 0 0 0 14.14M8.46 8.46a5 5 0 0 0 0 7.07"/></svg>
+      <span id="settingsLabel">Advanced Settings</span>
     </div>
+    <svg class="settings-chevron" id="settingsChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 12 15 18 9"/></svg>
+  </button>
+
+  <!-- TOGGLES (collapsible) -->
+  <div class="settings-body" id="settingsBody">
+    <div class="settings-body-inner">
+      <div class="card" style="margin-top: 0">
+
     <div class="toggle-row">
-      <div class="toggle-info">
-        <div class="toggle-label">Halfway countdown</div>
-        <div class="toggle-desc">Beep each second in the last 5s della prima metà</div>
+      <div class="toggle-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       </div>
-      <div class="toggle-right">
-        <label class="switch">
-          <input type="checkbox" id="togHalfCountdown">
-          <div class="switch-track"></div><div class="switch-thumb"></div>
-        </label>
-      </div>
-    </div>
-    <div class="toggle-row">
       <div class="toggle-info">
-        <div class="toggle-label">Start timer</div>
+        <div class="toggle-title">Start timer</div>
         <div class="toggle-desc">Countdown before the EMOM begins</div>
       </div>
       <div class="toggle-right">
         <div class="mini-stepper hidden" id="startCdStepper">
-          <button onclick="stepStartCd(-5)">−</button>
-          <input type="number" id="cfgStartCd" value="10" min="5" max="60" step="5" readonly>
-          <button onclick="stepStartCd(+5)">+</button>
+          <button class="mini-btn" onclick="stepStartCd(-5)">−</button>
+          <input class="mini-val" type="number" id="cfgStartCd" value="10" min="5" max="60" step="5" readonly>
+          <button class="mini-btn" onclick="stepStartCd(+5)">+</button>
         </div>
-        <label class="switch">
+        <label class="sw">
           <input type="checkbox" id="togStartCd" onchange="onToggleStartCd()">
-          <div class="switch-track"></div><div class="switch-thumb"></div>
+          <div class="sw-track"></div><div class="sw-thumb"></div>
         </label>
       </div>
     </div>
-  </div>
+
+    <div class="toggle-row">
+      <div class="toggle-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </div>
+      <div class="toggle-info">
+        <div class="toggle-title">Death by</div>
+        <div class="toggle-desc">No round limit — keep going until failure</div>
+      </div>
+      <div class="toggle-right">
+        <label class="sw">
+          <input type="checkbox" id="togDeathBy" onchange="onToggleDeathBy()">
+          <div class="sw-track"></div><div class="sw-thumb"></div>
+        </label>
+      </div>
+    </div>
+
+    <div class="toggle-row">
+      <div class="toggle-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+      </div>
+      <div class="toggle-info">
+        <div class="toggle-title">End-of-round countdown</div>
+        <div class="toggle-desc">Beep each second in the last 5s</div>
+      </div>
+      <div class="toggle-right">
+        <label class="sw">
+          <input type="checkbox" id="togCountdown" checked>
+          <div class="sw-track"></div><div class="sw-thumb"></div>
+        </label>
+      </div>
+    </div>
+
+    <div class="toggle-row">
+      <div class="toggle-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <div class="toggle-info">
+        <div class="toggle-title">Halfway countdown</div>
+        <div class="toggle-desc">Beep each second in the last 5s of the first half</div>
+      </div>
+      <div class="toggle-right">
+        <label class="sw">
+          <input type="checkbox" id="togHalfCountdown">
+          <div class="sw-track"></div><div class="sw-thumb"></div>
+        </label>
+      </div>
+    </div>
+
+    </div><!-- /.card -->
+    </div><!-- /.settings-body-inner -->
+  </div><!-- /.settings-body -->
   <div class="log-wrap" id="logWrap" style="display:none">
     <div class="log-title">Round Log</div>
     <div class="log-list" id="logList"></div>
   </div>
+
 </main>
 <div id="flash"></div>
+
 <script>
 // ── WAKE LOCK ─────────────────────────────────────────────────
 let wakeLock = null;
-
 async function requestWakeLock() {
   if (!('wakeLock' in navigator)) return;
-  try {
-    wakeLock = await navigator.wakeLock.request('screen');
-    wakeLock.addEventListener('release', () => { wakeLock = null; });
-  } catch (_) {}
+  try { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', ()=>{ wakeLock=null; }); } catch(_) {}
 }
-
-function releaseWakeLock() {
-  if (wakeLock) { wakeLock.release(); wakeLock = null; }
-}
-
-// Re-acquire if page becomes visible again (e.g. after tab switch)
+function releaseWakeLock() { if (wakeLock) { wakeLock.release(); wakeLock=null; } }
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && (running || inStartCd) && !paused) {
-    requestWakeLock();
-  }
+  if (document.visibilityState==='visible' && (running||inStartCd) && !paused) requestWakeLock();
 });
 
-// ── AUDIO ────────────────────────────────────────────────────
+// ── AUDIO ─────────────────────────────────────────────────────
 const actx = new (window.AudioContext || window.webkitAudioContext)();
 function beep(freq, dur, type='sine', vol=0.4) {
-  const o = actx.createOscillator(), g = actx.createGain();
+  const o=actx.createOscillator(), g=actx.createGain();
   o.connect(g); g.connect(actx.destination);
-  o.type = type;
-  o.frequency.setValueAtTime(freq, actx.currentTime);
+  o.type=type; o.frequency.setValueAtTime(freq, actx.currentTime);
   g.gain.setValueAtTime(vol, actx.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
-  o.start(); o.stop(actx.currentTime + dur);
+  g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime+dur);
+  o.start(); o.stop(actx.currentTime+dur);
 }
 function sndHalf()       { beep(880,.18,'triangle',.35); setTimeout(()=>beep(880,.18,'triangle',.35),220); }
 function sndCountdown(n) { beep(350+(n-1)*40,.09,'square',.28); }
@@ -343,190 +603,252 @@ function sndStartCd(n)   { beep(220+(6-n)*80,.1,'triangle',.2+(6-n)*.04); }
 function sndGo()         { beep(1047,.08,'square',.5); setTimeout(()=>beep(1047,.08,'square',.5),90); setTimeout(()=>beep(1319,.3,'square',.5),180); }
 function sndEnd(last)    { last ? [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.25,'square',.3),i*120)) : (beep(660,.12,'square',.35),setTimeout(()=>beep(880,.22,'square',.4),130)); }
 
-// ── SPEECH ───────────────────────────────────────────────────
-let speechReady = false;
+// ── SPEECH ────────────────────────────────────────────────────
+let speechReady=false;
 function prewarmSpeech() {
-  if (speechReady || !window.speechSynthesis) return;
-  const u = new SpeechSynthesisUtterance(''); u.volume=0;
-  speechSynthesis.speak(u); speechReady=true;
+  if (speechReady||!window.speechSynthesis) return;
+  const u=new SpeechSynthesisUtterance(''); u.volume=0; speechSynthesis.speak(u); speechReady=true;
 }
 function speak(text, opts={}) {
   if (!window.speechSynthesis) return;
-  const delay = opts.delay ?? 0;
-  setTimeout(() => {
+  setTimeout(()=>{
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
+    const u=new SpeechSynthesisUtterance(text);
     u.lang='en-US'; u.rate=opts.rate??1.05; u.pitch=opts.pitch??1.1; u.volume=opts.vol??0.9;
     speechSynthesis.speak(u);
-  }, delay);
+  }, opts.delay??0);
 }
 
-// ── STATE ────────────────────────────────────────────────────
+// ── STATE ─────────────────────────────────────────────────────
 let totalRounds=10, roundDuration=60;
 let currentRound=0, elapsed=0;
 let timerID=null, running=false, paused=false, halfFired=false;
 let inStartCd=false, startCdVal=0, startCdTotal=0;
 
-// ── DOM ──────────────────────────────────────────────────────
-const ringTime   = document.getElementById('ringTime');
-const ringLabel  = document.getElementById('ringLabel');
-const ringProg   = document.getElementById('ringProg');
-const ringHalf   = document.getElementById('ringHalf');
-const rRound     = document.getElementById('rRound');
-const rTotal     = document.getElementById('rTotal');
-const statusPill = document.getElementById('statusPill');
-const statusDot  = document.getElementById('statusDot');
-const statusText = document.getElementById('statusText');
-const btnStart   = document.getElementById('btnStart');
-const btnPause   = document.getElementById('btnPause');
-const configCard = document.getElementById('configCard');
-const logWrap    = document.getElementById('logWrap');
-const logList    = document.getElementById('logList');
-const flash      = document.getElementById('flash');
+// ── DOM ───────────────────────────────────────────────────────
+const ringTime    = document.getElementById('ringTime');
+const ringLabel   = document.getElementById('ringLabel');
+const ringProg    = document.getElementById('ringProg');
+const ringHalf    = document.getElementById('ringHalf');
+const statusPill  = document.getElementById('statusPill');
+const statusDot   = document.getElementById('statusDot');
+const statusText  = document.getElementById('statusText');
+const btnStart    = document.getElementById('btnStart');
+const btnPause    = document.getElementById('btnPause');
+const configCard  = document.getElementById('configCard');
+const logWrap     = document.getElementById('logWrap');
+const logList     = document.getElementById('logList');
+const flash       = document.getElementById('flash');
 const togCountdown     = document.getElementById('togCountdown');
 const togHalfCountdown = document.getElementById('togHalfCountdown');
 const togStartCd       = document.getElementById('togStartCd');
+const togDeathBy       = document.getElementById('togDeathBy');
 const startCdStepper   = document.getElementById('startCdStepper');
+const roundsField      = document.getElementById('roundsField');
 
-const CIRCUM = 2 * Math.PI * 88;
+const CIRCUM = 2 * Math.PI * 86;
+const SEG_R  = 62;   // inner ring radius
+const SEG_CIRCUM = 2 * Math.PI * SEG_R;
 
-// ── HELPERS ──────────────────────────────────────────────────
-// Read the current CSS var value so ring colours respect theme
-function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+// ── ROUND SEGMENTS ───────────────────────────────────────────
+// Draws N arc segments on the inner ring (r=62).
+// current=0 → all empty (reset state)
+function drawRoundSegments(total, current) {
+  const g = document.getElementById('roundSegs');
+  g.innerHTML = '';
+  if (!total || total === Infinity) {
+    // Death by: single thin pulse arc showing current count
+    if (current > 0) {
+      const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx','100'); c.setAttribute('cy','100');
+      c.setAttribute('r', SEG_R);
+      c.setAttribute('fill','none');
+      c.setAttribute('stroke', 'var(--accent)');
+      c.setAttribute('stroke-width','2');
+      c.setAttribute('stroke-linecap','round');
+      c.setAttribute('opacity','0.5');
+      c.setAttribute('stroke-dasharray',`${SEG_CIRCUM} 0`);
+      g.appendChild(c);
+    }
+    return;
+  }
+
+  const n      = Math.min(total, 60);  // cap at 60 segs for readability
+  const gap    = Math.min(4, (SEG_CIRCUM / n) * 0.18); // gap in px, max 4
+  const segLen = SEG_CIRCUM / n - gap;
+  const sw     = total <= 20 ? 3 : total <= 40 ? 2.5 : 2; // thinner for many rounds
+
+  for (let i = 0; i < n; i++) {
+    const offset = -(i * (segLen + gap)); // negative = clockwise from top
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx','100'); c.setAttribute('cy','100');
+    c.setAttribute('r', SEG_R);
+    c.setAttribute('fill','none');
+    c.setAttribute('stroke-width', sw);
+    c.setAttribute('stroke-linecap','round');
+    c.setAttribute('stroke-dasharray', `${segLen} ${SEG_CIRCUM - segLen}`);
+    c.setAttribute('stroke-dashoffset', offset);
+
+    if (i < current - 1)      c.setAttribute('class','seg-done');
+    else if (i === current -1) c.setAttribute('class','seg-current');
+    else                       c.setAttribute('class','seg-next');
+
+    g.appendChild(c);
+  }
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function isLight() { return window.matchMedia('(prefers-color-scheme: light)').matches; }
+function setRingGlow(color) {
+  const f = document.getElementById('ringGlow');
+  if (f) f.querySelector('feGaussianBlur').setAttribute('stdDeviation', isLight() ? '2' : '3');
+  ringProg.style.stroke = color;
+}
+
+// ── SETTINGS COLLAPSIBLE ──────────────────────────────────────
+const settingsBody    = document.getElementById('settingsBody');
+const settingsChevron = document.getElementById('settingsChevron');
+const settingsLabel   = document.getElementById('settingsLabel');
+
+function applySettingsState(open, animate=true) {
+  if (!animate) settingsBody.style.transition = 'none';
+  settingsBody.classList.toggle('open', open);
+  settingsChevron.classList.toggle('open', open);
+  settingsLabel.textContent = open ? 'Hide Settings' : 'Advanced Settings';
+  if (!animate) requestAnimationFrame(()=> settingsBody.style.transition = '');
+}
+function toggleSettings() {
+  const open = !settingsBody.classList.contains('open');
+  applySettingsState(open);
+  try { localStorage.setItem('knell_settings_open', open ? '1' : '0'); } catch(_) {}
+}
+// restore preference on load
+(function() {
+  let pref = '0';
+  try { pref = localStorage.getItem('knell_settings_open') ?? '0'; } catch(_) {}
+  applySettingsState(pref === '1', false);
+})();
 
 // ── STEPPERS ─────────────────────────────────────────────────
 function stepCfg(field, delta) {
   const el = field==='rounds' ? document.getElementById('cfgRounds') : document.getElementById('cfgDuration');
-  el.value = Math.min(+el.max, Math.max(+el.min, +el.value + delta));
+  el.value = Math.min(+el.max, Math.max(+el.min, +el.value+delta));
 }
 function stepStartCd(delta) {
   const el = document.getElementById('cfgStartCd');
-  el.value = Math.min(+el.max, Math.max(+el.min, +el.value + delta));
+  el.value = Math.min(+el.max, Math.max(+el.min, +el.value+delta));
 }
-function onToggleStartCd() {
-  startCdStepper.classList.toggle('hidden', !togStartCd.checked);
-}
+function onToggleStartCd()  { startCdStepper.classList.toggle('hidden', !togStartCd.checked); }
+function onToggleDeathBy()  { roundsField.classList.toggle('hidden', togDeathBy.checked); }
 
-// ── RING ─────────────────────────────────────────────────────
-function isLight() { return window.matchMedia('(prefers-color-scheme: light)').matches; }
-function glow(color) { return `drop-shadow(0 0 ${isLight() ? '5px' : '8px'} ${color})`; }
-
+// ── RING ──────────────────────────────────────────────────────
 function drawRingProgress(el, total) {
   const frac = Math.min(el/total, 1);
   ringProg.style.strokeDasharray = `${frac*CIRCUM} ${CIRCUM}`;
   const halfDash = .5*CIRCUM;
   ringHalf.style.strokeDasharray = `1 ${halfDash-1} 0 ${CIRCUM-halfDash}`;
-  if (el >= total-5)     { const c=cssVar('--danger'); ringProg.style.stroke=c; ringProg.style.filter=glow(c); }
-  else if (el >= total/2){ const c=cssVar('--cyan');   ringProg.style.stroke=c; ringProg.style.filter=glow(c); }
-  else                   { const c=cssVar('--lime');   ringProg.style.stroke=c; ringProg.style.filter=glow(c); }
+  if      (el >= total-5)    { setRingGlow(cssVar('--coral')); }
+  else if (el >= total/2)    { setRingGlow(cssVar('--mint'));  }
+  else                       { setRingGlow(cssVar('--accent'));}
 }
 function drawRingCountdown(remain, total) {
   ringProg.style.strokeDasharray = `${(remain/total)*CIRCUM} ${CIRCUM}`;
   ringHalf.style.strokeDasharray = '0 1000';
-  const g = cssVar('--gold');
-  ringProg.style.stroke = g;
-  ringProg.style.filter = `drop-shadow(0 0 ${isLight() ? '5px' : '10px'} ${g})`;
+  setRingGlow(cssVar('--gold'));
 }
 
-// ── STATUS ───────────────────────────────────────────────────
+// ── STATUS ────────────────────────────────────────────────────
 function setStatus(s) {
   statusPill.className = 'status-pill ' + s;
   statusDot.className  = 'dot' + (s==='running'||s==='countdown' ? ' pulse' : '');
   statusText.textContent = {
-    '':'READY', running:'IN PROGRESS', half:'HALFWAY',
+    '':'READY', running:'WORKING', half:'HALFWAY',
     paused:'PAUSED', done:'DONE', countdown:'GET READY'
   }[s] || 'READY';
 }
 function flash_(color) {
-  flash.style.background=color; flash.style.opacity='.15';
+  flash.style.background=color; flash.style.opacity='.12';
   setTimeout(()=>flash.style.opacity='0', 180);
 }
 
-// ── LOG ──────────────────────────────────────────────────────
+// ── LOG ───────────────────────────────────────────────────────
 function fmtSec(s) { const m=Math.floor(s/60); return m>0?`${m}:${String(s%60).padStart(2,'0')}`:`${s}s`; }
 function addLog(round, sec, total) {
-  const pct = Math.round(sec/total*100);
-  const el = document.createElement('div');
-  el.className='log-item';
+  const pct=Math.round(sec/total*100);
+  const el=document.createElement('div'); el.className='log-item';
   el.innerHTML=`<div class="log-num">${String(round).padStart(2,'0')}</div><div class="log-bar-wrap"><div class="log-bar" style="width:0%"></div></div><div class="log-time">${fmtSec(sec)}</div>`;
   logList.prepend(el);
-  requestAnimationFrame(()=>{
-    const b=el.querySelector('.log-bar');
-    b.style.width=pct+'%';
-    if(pct<50) b.style.background=cssVar('--danger');
-  });
+  requestAnimationFrame(()=>{ const b=el.querySelector('.log-bar'); b.style.width=pct+'%'; if(pct<50) b.style.background=cssVar('--coral'); });
   logWrap.style.display='block';
 }
 
-// ── LOCK CONFIG ──────────────────────────────────────────────
+// ── LOCK CONFIG ───────────────────────────────────────────────
 function lockConfig(on) {
-  configCard.style.opacity       = on ? '0.4' : '1';
-  configCard.style.pointerEvents = on ? 'none' : 'auto';
+  configCard.style.opacity      = on ? '0.35' : '1';
+  configCard.style.pointerEvents= on ? 'none'  : 'auto';
 }
 
-// ── START COUNTDOWN ──────────────────────────────────────────
+// ── START COUNTDOWN ───────────────────────────────────────────
 function initStartCd() {
-  startCdTotal = Math.max(5, +document.getElementById('cfgStartCd').value);
-  startCdVal   = startCdTotal;
-  ringLabel.textContent = 'STARTING IN';
-  ringTime.textContent  = String(startCdVal).padStart(2,'0');
-  ringTime.className    = 'ring-time go';
-  rRound.textContent    = '—';
-  rTotal.textContent    = totalRounds;
-  drawRingCountdown(startCdVal, startCdTotal);
+  startCdTotal=Math.max(5,+document.getElementById('cfgStartCd').value);
+  startCdVal=startCdTotal;
+  ringLabel.textContent='STARTING IN';
+  ringTime.textContent=String(startCdVal).padStart(2,'0');
+  ringTime.className='ring-time go';
+  drawRingCountdown(startCdVal,startCdTotal);
   setStatus('countdown');
 }
 function tickStartCd() {
   startCdVal--;
-  if (startCdVal > 0) {
-    ringTime.textContent = String(startCdVal).padStart(2,'0');
-    drawRingCountdown(startCdVal, startCdTotal);
-    if (startCdVal <= 5) sndStartCd(startCdVal);
+  if (startCdVal>0) {
+    ringTime.textContent=String(startCdVal).padStart(2,'0');
+    drawRingCountdown(startCdVal,startCdTotal);
+    if (startCdVal<=5) sndStartCd(startCdVal);
   } else {
     clearInterval(timerID); timerID=null; inStartCd=false;
     flash_('#ffffff'); sndGo();
-    speak('Go!', {rate:1.1, pitch:1.3});
+    speak('Go!',{rate:1.1,pitch:1.3});
     launchEmom(true);
   }
 }
 
-// ── EMOM ─────────────────────────────────────────────────────
+// ── EMOM ──────────────────────────────────────────────────────
 function launchEmom(fromCountdown=false) {
   running=true; paused=false;
-  startRound(1, fromCountdown);
-  timerID = setInterval(tickEmom, 1000);
+  startRound(1,fromCountdown);
+  timerID=setInterval(tickEmom,1000);
 }
 function startRound(n, delaySpeak=false) {
   currentRound=n; elapsed=0; halfFired=false;
-  rRound.textContent    = n;
-  rTotal.textContent    = totalRounds;
-  ringLabel.textContent = 'SECONDS';
-  ringTime.textContent  = String(roundDuration).padStart(2,'0');
-  ringTime.className    = 'ring-time';
-  drawRingProgress(0, roundDuration);
+  ringLabel.textContent='SECONDS';
+  ringTime.textContent=String(roundDuration).padStart(2,'0');
+  ringTime.className='ring-time';
+  drawRingProgress(0,roundDuration);
+  drawRoundSegments(totalRounds, n);
   setStatus('running');
-  speak(`Round ${n}`, { delay: delaySpeak ? 600 : 0 });
+  speak(`Round ${n}`,{delay:delaySpeak?600:0});
 }
 function tickEmom() {
   elapsed++;
-  const rem  = roundDuration - elapsed;
-  const half = Math.floor(roundDuration/2);
-  ringTime.textContent = String(rem).padStart(2,'0');
-  drawRingProgress(elapsed, roundDuration);
-  ringTime.className = rem<=5 ? 'ring-time end' : elapsed>=half ? 'ring-time half' : 'ring-time';
+  const rem=roundDuration-elapsed;
+  const half=Math.floor(roundDuration/2);
+  ringTime.textContent=String(rem).padStart(2,'0');
+  drawRingProgress(elapsed,roundDuration);
+  ringTime.className=rem<=5?'ring-time end':elapsed>=half?'ring-time half':'ring-time';
   if (togCountdown.checked && rem>=1 && rem<=5) sndCountdown(rem);
   if (!halfFired && elapsed===half) {
     halfFired=true;
-    sndHalf(); flash_(cssVar('--cyan')); setStatus('half');
-    speak('Halfway', {rate:1.0, pitch:1.05});
+    sndHalf(); flash_(cssVar('--mint')); setStatus('half');
+    speak('Halfway',{rate:1.0,pitch:1.05});
     setTimeout(()=>{ if(running) setStatus('running'); },1200);
   }
-  const halfRemain = half - elapsed;
+  const halfRemain=half-elapsed;
   if (togHalfCountdown.checked && !halfFired && halfRemain>=1 && halfRemain<=5) sndCountdown(halfRemain);
-  if (elapsed >= roundDuration) {
-    const last = currentRound >= totalRounds;
-    addLog(currentRound, elapsed, roundDuration);
-    sndEnd(last); flash_(last ? cssVar('--lime') : cssVar('--danger'));
+  if (elapsed>=roundDuration) {
+    const last=!togDeathBy.checked && currentRound>=totalRounds;
+    addLog(currentRound,elapsed,roundDuration);
+    sndEnd(last); flash_(last?cssVar('--accent'):cssVar('--coral'));
     if (last) endSession(); else startRound(currentRound+1);
   }
 }
@@ -534,9 +856,9 @@ function endSession() {
   clearInterval(timerID); timerID=null; running=false;
   releaseWakeLock();
   ringTime.textContent='✓'; ringTime.className='ring-time';
-  const lm = cssVar('--lime');
-  ringProg.style.stroke=lm; ringProg.style.strokeDasharray=`${CIRCUM} 0`;
-  ringProg.style.filter=glow(lm).replace('8px','14px');
+  ringProg.style.strokeDasharray=`${CIRCUM} 0`;
+  setRingGlow(cssVar('--accent'));
+  drawRoundSegments(totalRounds, totalRounds + 1); // all segments done
   setStatus('done'); speak('Workout complete!',{rate:.95,pitch:1});
   btnStart.textContent='START'; btnStart.disabled=false;
   btnPause.disabled=true; lockConfig(false);
@@ -546,10 +868,10 @@ function endSession() {
 function startTimer() {
   if (actx.state==='suspended') actx.resume();
   prewarmSpeech();
-  if ((running||inStartCd) && !paused) return;
-  if (!running && !inStartCd) {
-    totalRounds   = Math.max(1,  +document.getElementById('cfgRounds').value   || 10);
-    roundDuration = Math.max(10, +document.getElementById('cfgDuration').value || 60);
+  if ((running||inStartCd)&&!paused) return;
+  if (!running&&!inStartCd) {
+    totalRounds  =togDeathBy.checked?Infinity:Math.max(1,+document.getElementById('cfgRounds').value||10);
+    roundDuration=Math.max(10,+document.getElementById('cfgDuration').value||60);
     logList.innerHTML=''; logWrap.style.display='none';
     btnStart.disabled=true; btnPause.disabled=false; lockConfig(true);
     if (togStartCd.checked) { inStartCd=true; initStartCd(); timerID=setInterval(tickStartCd,1000); requestWakeLock(); }
@@ -557,7 +879,7 @@ function startTimer() {
   } else if (paused) {
     paused=false; btnStart.disabled=true; btnStart.textContent='START';
     if (inStartCd) { setStatus('countdown'); timerID=setInterval(tickStartCd,1000); requestWakeLock(); }
-    else           { setStatus('running');   timerID=setInterval(tickEmom,1000); requestWakeLock();    }
+    else           { setStatus('running');   timerID=setInterval(tickEmom,1000);    requestWakeLock(); }
   }
 }
 function pauseTimer() {
@@ -572,21 +894,21 @@ function resetTimer() {
   releaseWakeLock();
   running=paused=inStartCd=false;
   currentRound=elapsed=startCdVal=0; halfFired=false;
-  ringLabel.textContent = 'SECONDS';
-  ringTime.textContent  = '00'; ringTime.className='ring-time';
-  rRound.textContent='0'; rTotal.textContent='0';
-  const lm = cssVar('--lime');
+  roundsField.classList.remove('hidden');
+  ringLabel.textContent='SECONDS';
+  ringTime.textContent='00'; ringTime.className='ring-time';
   ringProg.style.strokeDasharray=`0 ${CIRCUM}`;
-  ringProg.style.stroke=lm; ringProg.style.filter=glow(lm);
+  setRingGlow(cssVar('--accent'));
   ringHalf.style.strokeDasharray='0 1000';
+  drawRoundSegments(0, 0); // clear segments
   setStatus('');
   btnStart.textContent='START'; btnStart.disabled=false;
-  btnPause.disabled=true; btnPause.textContent='II';
+  btnPause.disabled=true;
   lockConfig(false);
 }
 
-// ── INIT ─────────────────────────────────────────────────────
-drawRingProgress(0, 1); setStatus('');
+// ── INIT ──────────────────────────────────────────────────────
+drawRingProgress(0,1); drawRoundSegments(0,0); setStatus('');
 
 // ── SERVICE WORKER ────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
