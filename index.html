@@ -116,9 +116,11 @@ main {
 /* ── RING ───────────────────────────────────────────────── */
 .ring-wrap {
   position: relative;
-  width: var(--ring-size); height: var(--ring-size);
+  width: var(--ring-size); aspect-ratio: 1;
   flex-shrink: 0;
+  transition: width .45s cubic-bezier(.4,0,.2,1);
 }
+.ring-wrap.expanded { width: 100%; }
 .ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .ring-bg   { fill: none; stroke: var(--ring-track); stroke-width: 10; }
 .ring-half {
@@ -431,7 +433,7 @@ footer {
   </div>
 
   <!-- RING -->
-  <div class="ring-wrap">
+  <div class="ring-wrap" id="ringWrap">
     <svg viewBox="0 0 200 200">
       <defs>
         <filter id="ringGlow" x="-25%" y="-25%" width="150%" height="150%">
@@ -651,6 +653,7 @@ const togStartCd       = document.getElementById('togStartCd');
 const togDeathBy       = document.getElementById('togDeathBy');
 const startCdStepper   = document.getElementById('startCdStepper');
 const roundsField      = document.getElementById('roundsField');
+const ringWrap         = document.getElementById('ringWrap');
 
 const CIRCUM = 2 * Math.PI * 86;
 const SEG_R  = 62;   // inner ring radius
@@ -777,6 +780,7 @@ function drawRingCountdown(remain, total) {
 function setStatus(s) {
   statusPill.className = 'status-pill ' + s;
   statusDot.className  = 'dot' + (s==='running'||s==='countdown' ? ' pulse' : '');
+  ringWrap.classList.toggle('expanded', s !== '');
   statusText.textContent = {
     '':'READY', running:'WORKING', half:'HALFWAY',
     paused:'PAUSED', done:'DONE', countdown:'GET READY'
