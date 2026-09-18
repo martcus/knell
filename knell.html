@@ -100,6 +100,24 @@ main {
 .status-pill.done      { background: var(--coral-dim);   color: var(--coral);  border-color: var(--coral); }
 .status-pill.countdown { background: var(--gold-dim);    color: var(--gold);   border-color: var(--gold); }
 .status-pill.paused    { background: var(--surface2);    color: var(--muted);  border-color: var(--border); }
+.status-pill.rest      { background: var(--mint-dim);    color: var(--mint);   border-color: var(--mint); }
+
+.type-selector {
+  display: flex; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 14px;
+  padding: 4px; gap: 4px; width: 100%;
+}
+.type-btn {
+  flex: 1; height: 40px;
+  border: none; border-radius: 10px;
+  background: transparent; color: var(--muted);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem; letter-spacing: .12em;
+  cursor: pointer;
+  transition: background .2s, color .2s;
+}
+.type-btn.active { background: var(--accent); color: var(--accent-text); }
+.type-btn:hover:not(.active) { background: var(--surface2); color: var(--text); }
 .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
 .dot.pulse { animation: pulse 1.1s ease-in-out infinite; }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.65)} }
@@ -449,10 +467,16 @@ footer {
     </button>
   </div>
 
-  <!-- CONFIG -->
-  <div class="card" id="configCard">
+  <!-- TIMER TYPE -->
+  <div class="type-selector">
+    <button class="type-btn active" id="typeBtnEmom" onclick="setTimerType('emom')">EMOM</button>
+    <button class="type-btn" id="typeBtnInterval" onclick="setTimerType('interval')">INTERVAL</button>
+  </div>
+
+  <!-- EMOM CONFIG -->
+  <div class="card" id="emomConfig">
     <div class="config-grid">
-      <div class="cfg-cell rounds-field" id="roundsField">
+      <div class="cfg-cell rounds-field" id="roundsFieldEmom">
         <div class="cfg-label">Rounds</div>
         <div class="stepper">
           <button class="stepper-btn" onclick="stepCfg('rounds',-1)">−</button>
@@ -466,6 +490,36 @@ footer {
           <button class="stepper-btn" onclick="stepCfg('duration',-5)">−</button>
           <input class="stepper-val" type="number" id="cfgDuration" value="60" min="10" max="300">
           <button class="stepper-btn" onclick="stepCfg('duration',+5)">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INTERVAL CONFIG -->
+  <div class="card" id="intervalConfig" style="display:none">
+    <div class="config-grid">
+      <div class="cfg-cell">
+        <div class="cfg-label">Workout (sec)</div>
+        <div class="stepper">
+          <button class="stepper-btn" onclick="stepCfg('workout',-5)">−</button>
+          <input class="stepper-val" type="number" id="cfgWorkout" value="45" min="5" max="300">
+          <button class="stepper-btn" onclick="stepCfg('workout',+5)">+</button>
+        </div>
+      </div>
+      <div class="cfg-cell" style="border-right:none">
+        <div class="cfg-label">Rest (sec)</div>
+        <div class="stepper">
+          <button class="stepper-btn" onclick="stepCfg('rest',-5)">−</button>
+          <input class="stepper-val" type="number" id="cfgRest" value="15" min="5" max="300">
+          <button class="stepper-btn" onclick="stepCfg('rest',+5)">+</button>
+        </div>
+      </div>
+      <div class="cfg-cell rounds-field" id="roundsFieldInterval" style="grid-column:1/-1; border-top:1px solid var(--border)">
+        <div class="cfg-label">Rounds</div>
+        <div class="stepper">
+          <button class="stepper-btn" onclick="stepCfg('roundsInterval',-1)">−</button>
+          <input class="stepper-val" type="number" id="cfgRoundsInterval" value="10" min="1" max="99">
+          <button class="stepper-btn" onclick="stepCfg('roundsInterval',+1)">+</button>
         </div>
       </div>
     </div>
@@ -527,8 +581,8 @@ footer {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
       </div>
       <div class="toggle-info">
-        <div class="toggle-title">End-of-round countdown</div>
-        <div class="toggle-desc">Beep each second in the last 5s</div>
+        <div class="toggle-title" id="togCountdownTitle">End-of-round countdown</div>
+        <div class="toggle-desc" id="togCountdownDesc">Beep each second in the last 5s</div>
       </div>
       <div class="toggle-right">
         <label class="sw">
@@ -538,7 +592,7 @@ footer {
       </div>
     </div>
 
-    <div class="toggle-row">
+    <div class="toggle-row" id="togHalfRow">
       <div class="toggle-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       </div>
@@ -614,10 +668,13 @@ function speak(text, opts={}) {
 }
 
 // ── STATE ─────────────────────────────────────────────────────
+let timerType='emom';
 let totalRounds=10, roundDuration=60;
+let workoutDuration=45, restDuration=15;
 let currentRound=0, elapsed=0;
 let timerID=null, running=false, paused=false, halfFired=false;
 let inStartCd=false, startCdVal=0, startCdTotal=0;
+let intervalPhase='workout'; // 'workout' | 'rest'
 
 // ── DOM ───────────────────────────────────────────────────────
 const ringTime    = document.getElementById('ringTime');
@@ -629,7 +686,8 @@ const statusDot   = document.getElementById('statusDot');
 const statusText  = document.getElementById('statusText');
 const btnStart    = document.getElementById('btnStart');
 const btnPause    = document.getElementById('btnPause');
-const configCard  = document.getElementById('configCard');
+const emomConfig  = document.getElementById('emomConfig');
+const intervalConfig = document.getElementById('intervalConfig');
 const logWrap     = document.getElementById('logWrap');
 const logList     = document.getElementById('logList');
 const flash       = document.getElementById('flash');
@@ -638,55 +696,44 @@ const togHalfCountdown = document.getElementById('togHalfCountdown');
 const togStartCd       = document.getElementById('togStartCd');
 const togDeathBy       = document.getElementById('togDeathBy');
 const startCdStepper   = document.getElementById('startCdStepper');
-const roundsField      = document.getElementById('roundsField');
+const roundsFieldEmom     = document.getElementById('roundsFieldEmom');
+const roundsFieldInterval = document.getElementById('roundsFieldInterval');
 
 const CIRCUM = 2 * Math.PI * 86;
-const SEG_R  = 62;   // inner ring radius
+const SEG_R  = 62;
 const SEG_CIRCUM = 2 * Math.PI * SEG_R;
 
 // ── ROUND SEGMENTS ───────────────────────────────────────────
-// Draws N arc segments on the inner ring (r=62).
-// current=0 → all empty (reset state)
 function drawRoundSegments(total, current) {
   const g = document.getElementById('roundSegs');
   g.innerHTML = '';
   if (!total || total === Infinity) {
-    // Death by: single thin pulse arc showing current count
     if (current > 0) {
       const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
       c.setAttribute('cx','100'); c.setAttribute('cy','100');
-      c.setAttribute('r', SEG_R);
-      c.setAttribute('fill','none');
-      c.setAttribute('stroke', 'var(--accent)');
-      c.setAttribute('stroke-width','2');
-      c.setAttribute('stroke-linecap','round');
-      c.setAttribute('opacity','0.5');
+      c.setAttribute('r', SEG_R); c.setAttribute('fill','none');
+      c.setAttribute('stroke', 'var(--accent)'); c.setAttribute('stroke-width','2');
+      c.setAttribute('stroke-linecap','round'); c.setAttribute('opacity','0.5');
       c.setAttribute('stroke-dasharray',`${SEG_CIRCUM} 0`);
       g.appendChild(c);
     }
     return;
   }
-
-  const n      = Math.min(total, 60);  // cap at 60 segs for readability
-  const gap    = Math.min(4, (SEG_CIRCUM / n) * 0.18); // gap in px, max 4
+  const n      = Math.min(total, 60);
+  const gap    = Math.min(4, (SEG_CIRCUM / n) * 0.18);
   const segLen = SEG_CIRCUM / n - gap;
-  const sw     = total <= 20 ? 3 : total <= 40 ? 2.5 : 2; // thinner for many rounds
-
+  const sw     = total <= 20 ? 3 : total <= 40 ? 2.5 : 2;
   for (let i = 0; i < n; i++) {
-    const offset = -(i * (segLen + gap)); // negative = clockwise from top
+    const offset = -(i * (segLen + gap));
     const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
-    c.setAttribute('cx','100'); c.setAttribute('cy','100');
-    c.setAttribute('r', SEG_R);
-    c.setAttribute('fill','none');
-    c.setAttribute('stroke-width', sw);
+    c.setAttribute('cx','100'); c.setAttribute('cy','100'); c.setAttribute('r', SEG_R);
+    c.setAttribute('fill','none'); c.setAttribute('stroke-width', sw);
     c.setAttribute('stroke-linecap','round');
     c.setAttribute('stroke-dasharray', `${segLen} ${SEG_CIRCUM - segLen}`);
     c.setAttribute('stroke-dashoffset', offset);
-
-    if (i < current - 1)      c.setAttribute('class','seg-done');
-    else if (i === current -1) c.setAttribute('class','seg-current');
-    else                       c.setAttribute('class','seg-next');
-
+    if (i < current - 1)       c.setAttribute('class','seg-done');
+    else if (i === current - 1) c.setAttribute('class','seg-current');
+    else                        c.setAttribute('class','seg-next');
     g.appendChild(c);
   }
 }
@@ -698,6 +745,20 @@ function setRingGlow(color) {
   const f = document.getElementById('ringGlow');
   if (f) f.querySelector('feGaussianBlur').setAttribute('stdDeviation', isLight() ? '2' : '3');
   ringProg.style.stroke = color;
+}
+
+// ── TIMER TYPE ────────────────────────────────────────────────
+function setTimerType(type) {
+  timerType = type;
+  const isEmom = type === 'emom';
+  emomConfig.style.display = isEmom ? '' : 'none';
+  intervalConfig.style.display = isEmom ? 'none' : '';
+  document.getElementById('typeBtnEmom').classList.toggle('active', isEmom);
+  document.getElementById('typeBtnInterval').classList.toggle('active', !isEmom);
+  document.getElementById('togCountdownTitle').textContent = isEmom ? 'End-of-round countdown' : 'End-of-interval countdown';
+  document.getElementById('togCountdownDesc').textContent  = isEmom ? 'Beep each second in the last 5s' : 'Beep each second in the last 5s of workout';
+  document.getElementById('togHalfRow').style.display = isEmom ? '' : 'none';
+  try { localStorage.setItem('knell_timer_type', type); } catch(_) {}
 }
 
 // ── SETTINGS COLLAPSIBLE ──────────────────────────────────────
@@ -717,7 +778,6 @@ function toggleSettings() {
   applySettingsState(open);
   try { localStorage.setItem('knell_settings_open', open ? '1' : '0'); } catch(_) {}
 }
-// restore preference on load
 (function() {
   let pref = '0';
   try { pref = localStorage.getItem('knell_settings_open') ?? '0'; } catch(_) {}
@@ -726,15 +786,19 @@ function toggleSettings() {
 
 // ── STEPPERS ─────────────────────────────────────────────────
 function stepCfg(field, delta) {
-  const el = field==='rounds' ? document.getElementById('cfgRounds') : document.getElementById('cfgDuration');
-  el.value = Math.min(+el.max, Math.max(+el.min, +el.value+delta));
+  const ids = { rounds:'cfgRounds', duration:'cfgDuration', roundsInterval:'cfgRoundsInterval', workout:'cfgWorkout', rest:'cfgRest' };
+  const el = document.getElementById(ids[field]);
+  if (el) el.value = Math.min(+el.max, Math.max(+el.min, +el.value + delta));
 }
 function stepStartCd(delta) {
   const el = document.getElementById('cfgStartCd');
   el.value = Math.min(+el.max, Math.max(+el.min, +el.value+delta));
 }
-function onToggleStartCd()  { startCdStepper.classList.toggle('hidden', !togStartCd.checked); }
-function onToggleDeathBy()  { roundsField.classList.toggle('hidden', togDeathBy.checked); }
+function onToggleStartCd() { startCdStepper.classList.toggle('hidden', !togStartCd.checked); }
+function onToggleDeathBy() {
+  roundsFieldEmom.classList.toggle('hidden', togDeathBy.checked);
+  roundsFieldInterval.classList.toggle('hidden', togDeathBy.checked);
+}
 
 // ── RING ──────────────────────────────────────────────────────
 function drawRingProgress(el, total) {
@@ -742,9 +806,9 @@ function drawRingProgress(el, total) {
   ringProg.style.strokeDasharray = `${frac*CIRCUM} ${CIRCUM}`;
   const halfDash = .5*CIRCUM;
   ringHalf.style.strokeDasharray = `1 ${halfDash-1} 0 ${CIRCUM-halfDash}`;
-  if      (el >= total-5)    { setRingGlow(cssVar('--coral')); }
-  else if (el >= total/2)    { setRingGlow(cssVar('--mint'));  }
-  else                       { setRingGlow(cssVar('--accent'));}
+  if      (el >= total-5) { setRingGlow(cssVar('--coral')); }
+  else if (el >= total/2) { setRingGlow(cssVar('--mint'));  }
+  else                    { setRingGlow(cssVar('--accent')); }
 }
 function drawRingCountdown(remain, total) {
   ringProg.style.strokeDasharray = `${(remain/total)*CIRCUM} ${CIRCUM}`;
@@ -755,10 +819,10 @@ function drawRingCountdown(remain, total) {
 // ── STATUS ────────────────────────────────────────────────────
 function setStatus(s) {
   statusPill.className = 'status-pill ' + s;
-  statusDot.className  = 'dot' + (s==='running'||s==='countdown' ? ' pulse' : '');
+  statusDot.className  = 'dot' + (['running','countdown','rest'].includes(s) ? ' pulse' : '');
   statusText.textContent = {
     '':'READY', running:'WORKING', half:'HALFWAY',
-    paused:'PAUSED', done:'DONE', countdown:'GET READY'
+    paused:'PAUSED', done:'DONE', countdown:'GET READY', rest:'REST'
   }[s] || 'READY';
 }
 function flash_(color) {
@@ -779,8 +843,12 @@ function addLog(round, sec, total) {
 
 // ── LOCK CONFIG ───────────────────────────────────────────────
 function lockConfig(on) {
-  configCard.style.opacity      = on ? '0.35' : '1';
-  configCard.style.pointerEvents= on ? 'none'  : 'auto';
+  const typeSel = document.querySelector('.type-selector');
+  [emomConfig, intervalConfig, typeSel].forEach(el => {
+    if (!el) return;
+    el.style.opacity = on ? '0.35' : '1';
+    el.style.pointerEvents = on ? 'none' : 'auto';
+  });
 }
 
 // ── START COUNTDOWN ───────────────────────────────────────────
@@ -803,7 +871,7 @@ function tickStartCd() {
     clearInterval(timerID); timerID=null; inStartCd=false;
     flash_('#ffffff'); sndGo();
     speak('Go!',{rate:1.1,pitch:1.3});
-    launchEmom(true);
+    if (timerType==='emom') launchEmom(true); else launchInterval(true);
   }
 }
 
@@ -846,13 +914,72 @@ function tickEmom() {
     if (last) endSession(); else startRound(currentRound+1);
   }
 }
+
+// ── INTERVAL ─────────────────────────────────────────────────
+function launchInterval(fromCountdown=false) {
+  running=true; paused=false;
+  intervalPhase='workout';
+  startIntervalRound(1, fromCountdown);
+  timerID=setInterval(tickInterval,1000);
+}
+function startIntervalRound(n, delaySpeak=false) {
+  intervalPhase='workout';
+  currentRound=n; elapsed=0;
+  ringLabel.textContent='WORKOUT';
+  ringTime.textContent=String(workoutDuration).padStart(2,'0');
+  ringTime.className='ring-time';
+  drawRingProgress(0,workoutDuration);
+  drawRoundSegments(totalRounds,n);
+  setStatus('running');
+  speak(`Round ${n}`,{delay:delaySpeak?600:0});
+}
+function startRestPhase() {
+  intervalPhase='rest';
+  elapsed=0;
+  ringLabel.textContent='REST';
+  ringTime.textContent=String(restDuration).padStart(2,'0');
+  ringTime.className='ring-time half';
+  drawRingCountdown(restDuration,restDuration);
+  setRingGlow(cssVar('--mint'));
+  setStatus('rest');
+  speak('Rest',{rate:1.0,pitch:0.9});
+}
+function tickInterval() {
+  elapsed++;
+  if (intervalPhase==='workout') {
+    const rem=workoutDuration-elapsed;
+    ringTime.textContent=String(rem).padStart(2,'0');
+    drawRingProgress(elapsed,workoutDuration);
+    ringTime.className=rem<=5?'ring-time end':elapsed>=Math.floor(workoutDuration/2)?'ring-time half':'ring-time';
+    if (togCountdown.checked && rem>=1 && rem<=5) sndCountdown(rem);
+    if (elapsed>=workoutDuration) {
+      const last=!togDeathBy.checked && currentRound>=totalRounds;
+      addLog(currentRound,workoutDuration,workoutDuration);
+      sndEnd(last); flash_(last?cssVar('--accent'):cssVar('--mint'));
+      if (last) endSession(); else startRestPhase();
+    }
+  } else {
+    const rem=restDuration-elapsed;
+    ringTime.textContent=String(rem).padStart(2,'0');
+    drawRingCountdown(rem,restDuration);
+    setRingGlow(cssVar('--mint'));
+    ringTime.className=rem<=3?'ring-time go':'ring-time half';
+    if (elapsed>=restDuration) {
+      flash_(cssVar('--accent'));
+      sndEnd(false);
+      startIntervalRound(currentRound+1);
+    }
+  }
+}
+
+// ── END SESSION ───────────────────────────────────────────────
 function endSession() {
   clearInterval(timerID); timerID=null; running=false;
   releaseWakeLock();
   ringTime.textContent='✓'; ringTime.className='ring-time';
   ringProg.style.strokeDasharray=`${CIRCUM} 0`;
   setRingGlow(cssVar('--accent'));
-  drawRoundSegments(totalRounds, totalRounds + 1); // all segments done
+  drawRoundSegments(totalRounds, totalRounds + 1);
   setStatus('done'); speak('Workout complete!',{rate:.95,pitch:1});
   btnStart.textContent='START'; btnStart.disabled=false;
   btnPause.disabled=true; lockConfig(false);
@@ -864,16 +991,23 @@ function startTimer() {
   prewarmSpeech();
   if ((running||inStartCd)&&!paused) return;
   if (!running&&!inStartCd) {
-    totalRounds  =togDeathBy.checked?Infinity:Math.max(1,+document.getElementById('cfgRounds').value||10);
-    roundDuration=Math.max(10,+document.getElementById('cfgDuration').value||60);
+    if (timerType==='emom') {
+      totalRounds  =togDeathBy.checked?Infinity:Math.max(1,+document.getElementById('cfgRounds').value||10);
+      roundDuration=Math.max(10,+document.getElementById('cfgDuration').value||60);
+    } else {
+      totalRounds    =togDeathBy.checked?Infinity:Math.max(1,+document.getElementById('cfgRoundsInterval').value||10);
+      workoutDuration=Math.max(5,+document.getElementById('cfgWorkout').value||45);
+      restDuration   =Math.max(5,+document.getElementById('cfgRest').value||15);
+    }
     logList.innerHTML=''; logWrap.style.display='none';
     btnStart.disabled=true; btnPause.disabled=false; lockConfig(true);
     if (togStartCd.checked) { inStartCd=true; initStartCd(); timerID=setInterval(tickStartCd,1000); requestWakeLock(); }
-    else                    { launchEmom(); requestWakeLock(); }
+    else { if (timerType==='emom') launchEmom(); else launchInterval(); requestWakeLock(); }
   } else if (paused) {
     paused=false; btnStart.disabled=true; btnStart.textContent='START';
     if (inStartCd) { setStatus('countdown'); timerID=setInterval(tickStartCd,1000); requestWakeLock(); }
-    else           { setStatus('running');   timerID=setInterval(tickEmom,1000);    requestWakeLock(); }
+    else if (timerType==='emom') { setStatus('running'); timerID=setInterval(tickEmom,1000); requestWakeLock(); }
+    else { setStatus(intervalPhase==='rest'?'rest':'running'); timerID=setInterval(tickInterval,1000); requestWakeLock(); }
   }
 }
 function pauseTimer() {
@@ -888,13 +1022,15 @@ function resetTimer() {
   releaseWakeLock();
   running=paused=inStartCd=false;
   currentRound=elapsed=startCdVal=0; halfFired=false;
-  roundsField.classList.remove('hidden');
+  intervalPhase='workout';
+  roundsFieldEmom.classList.remove('hidden');
+  roundsFieldInterval.classList.remove('hidden');
   ringLabel.textContent='SECONDS';
   ringTime.textContent='00'; ringTime.className='ring-time';
   ringProg.style.strokeDasharray=`0 ${CIRCUM}`;
   setRingGlow(cssVar('--accent'));
   ringHalf.style.strokeDasharray='0 1000';
-  drawRoundSegments(0, 0); // clear segments
+  drawRoundSegments(0, 0);
   setStatus('');
   btnStart.textContent='START'; btnStart.disabled=false;
   btnPause.disabled=true;
@@ -902,10 +1038,15 @@ function resetTimer() {
 }
 
 // ── VERSION ───────────────────────────────────────────────────
-const APP_VERSION = '1.2';
+const APP_VERSION = '1.3';
 document.getElementById('footerVersion').textContent = 'v' + APP_VERSION;
 
 // ── INIT ──────────────────────────────────────────────────────
+(function() {
+  let savedType = 'emom';
+  try { savedType = localStorage.getItem('knell_timer_type') ?? 'emom'; } catch(_) {}
+  setTimerType(savedType);
+})();
 drawRingProgress(0,1); drawRoundSegments(0,0); setStatus('');
 </script>
 </body>

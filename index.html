@@ -153,43 +153,84 @@ main {
 .ring-time.half { color: var(--mint); }
 .ring-time.end  { color: var(--coral); }
 .ring-time.go   { color: var(--gold); }
+.ring-rounds {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(1rem, 4.5vw, 1.25rem);
+  letter-spacing: .1em; color: var(--muted);
+  line-height: 1; margin-top: 2px;
+  min-height: 1.25em;
+}
 
 
 /* ── CONTROLS ───────────────────────────────────────────── */
-.controls { width: 100%; display: flex; gap: 10px; align-items: center; }
-
-.btn-icon {
-  width: 56px; height: 56px; flex-shrink: 0;
-  border: none; border-radius: 16px;
-  background: var(--surface2);
-  color: var(--muted);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  transition: background .2s, color .2s, transform .1s;
-  border: 1px solid var(--border);
-}
-.btn-icon:hover { color: var(--text); background: var(--border); }
-.btn-icon:active { transform: scale(.93); }
-.btn-icon svg { width: 20px; height: 20px; stroke-width: 2; }
-.btn-icon.danger:hover { color: var(--coral); }
+.controls { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 
 .btn-start {
-  flex: 1; height: 56px;
-  border: none; border-radius: 16px;
+  width: 100%; height: 64px;
+  border: none; border-radius: 18px;
   background: var(--accent); color: var(--accent-text);
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.35rem; letter-spacing: .14em;
+  font-size: 1.55rem; letter-spacing: .16em;
   cursor: pointer;
   box-shadow: 0 0 24px var(--accent-glow);
   transition: box-shadow .2s, transform .1s, background .2s, color .2s;
 }
 .btn-start:hover { box-shadow: 0 0 36px var(--accent-glow); }
-.btn-start:active { transform: scale(.96); }
-.btn-start:disabled {
-  background: var(--surface2); color: var(--muted);
-  box-shadow: none; cursor: not-allowed;
-  border: 1px solid var(--border);
+.btn-start:active { transform: scale(.97); }
+
+.btn-reset {
+  background: none; border: none;
+  font-size: .65rem; font-weight: 600;
+  letter-spacing: .18em; text-transform: uppercase;
+  color: var(--muted); cursor: pointer;
+  padding: 4px 12px; border-radius: 8px;
+  transition: color .2s, background .2s;
+  opacity: 0.55;
 }
+.btn-reset:hover { color: var(--coral); background: var(--coral-dim); opacity: 1; }
+.btn-reset:active { transform: scale(.95); }
+
+/* ── CONFIRM MODAL ──────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
+  display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  opacity: 0; pointer-events: none;
+  transition: opacity .22s;
+}
+.modal-overlay.visible { opacity: 1; pointer-events: all; }
+.modal-sheet {
+  width: 100%; max-width: 480px;
+  background: var(--surface); border-radius: 24px 24px 0 0;
+  padding: 28px 24px 36px;
+  display: flex; flex-direction: column; gap: 20px;
+  transform: translateY(40px);
+  transition: transform .28s cubic-bezier(.4,0,.2,1);
+  border-top: 1px solid var(--border);
+}
+.modal-overlay.visible .modal-sheet { transform: translateY(0); }
+.modal-title {
+  font-size: .95rem; font-weight: 700;
+  color: var(--text); text-align: center;
+}
+.modal-desc {
+  font-size: .78rem; color: var(--muted);
+  text-align: center; line-height: 1.5;
+  margin-top: -10px;
+}
+.modal-actions { display: flex; gap: 10px; }
+.modal-btn {
+  flex: 1; height: 52px; border-radius: 14px;
+  border: none; cursor: pointer; font-weight: 600;
+  font-size: .88rem; letter-spacing: .04em;
+  transition: background .2s, transform .1s;
+}
+.modal-btn:active { transform: scale(.96); }
+.modal-btn.cancel { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+.modal-btn.cancel:hover { background: var(--border); }
+.modal-btn.confirm { background: var(--coral); color: #fff; }
+.modal-btn.confirm:hover { filter: brightness(1.1); }
 
 /* ── CARD ───────────────────────────────────────────────── */
 .card {
@@ -450,18 +491,26 @@ footer {
     <div class="ring-inner">
       <div class="ring-label" id="ringLabel">SECONDS</div>
       <div class="ring-time"  id="ringTime">00</div>
+      <div class="ring-rounds" id="ringRounds"></div>
     </div>
   </div>
 
   <!-- CONTROLS -->
   <div class="controls">
-    <button class="btn-icon danger" onclick="resetTimer()" title="Reset">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-    </button>
-    <button class="btn-start" id="btnStart" onclick="startTimer()">START</button>
-    <button class="btn-icon" id="btnPause" onclick="pauseTimer()" disabled title="Pause">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
-    </button>
+    <button class="btn-start" id="btnStart" onclick="toggleTimer()">START</button>
+    <button class="btn-reset" id="btnReset" onclick="askReset()" style="visibility:hidden">Reset</button>
+  </div>
+
+  <!-- RESET CONFIRM MODAL -->
+  <div class="modal-overlay" id="resetModal" onclick="closeResetModal(event)">
+    <div class="modal-sheet">
+      <div class="modal-title">Reset session?</div>
+      <div class="modal-desc">The current workout and round log will be lost.</div>
+      <div class="modal-actions">
+        <button class="modal-btn cancel" onclick="closeResetModal()">Keep going</button>
+        <button class="modal-btn confirm" onclick="confirmReset()">Reset</button>
+      </div>
+    </div>
   </div>
 
   <!-- CONFIG -->
@@ -636,13 +685,15 @@ let inStartCd=false, startCdVal=0, startCdTotal=0;
 // ── DOM ───────────────────────────────────────────────────────
 const ringTime    = document.getElementById('ringTime');
 const ringLabel   = document.getElementById('ringLabel');
+const ringRounds  = document.getElementById('ringRounds');
 const ringProg    = document.getElementById('ringProg');
 const ringHalf    = document.getElementById('ringHalf');
 const statusPill  = document.getElementById('statusPill');
 const statusDot   = document.getElementById('statusDot');
 const statusText  = document.getElementById('statusText');
 const btnStart    = document.getElementById('btnStart');
-const btnPause    = document.getElementById('btnPause');
+const btnReset    = document.getElementById('btnReset');
+const resetModal  = document.getElementById('resetModal');
 const configCard  = document.getElementById('configCard');
 const logWrap     = document.getElementById('logWrap');
 const logList     = document.getElementById('logList');
@@ -760,6 +811,12 @@ function onToggleDeathBy()  {
   document.getElementById('configGrid').classList.toggle('death-by', on);
 }
 
+function pad2(n) { return String(n).padStart(2,'0'); }
+function updateRoundDisplay(current, total) {
+  if (!current || total === Infinity) { ringRounds.textContent = ''; return; }
+  ringRounds.textContent = `${pad2(current)} / ${pad2(total)}`;
+}
+
 // ── RING ──────────────────────────────────────────────────────
 function drawRingProgress(el, total) {
   const frac = Math.min(el/total, 1);
@@ -845,6 +902,7 @@ function startRound(n, delaySpeak=false) {
   ringTime.className='ring-time';
   drawRingProgress(0,roundDuration);
   drawRoundSegments(totalRounds, n);
+  updateRoundDisplay(n, totalRounds);
   setStatus('running');
   speak(`Round ${n}`,{delay:delaySpeak?600:0});
 }
@@ -879,16 +937,26 @@ function endSession() {
   setRingGlow(cssVar('--accent'));
   drawRoundSegments(totalRounds, totalRounds + 1); // all segments done
   setStatus('done'); speak('Workout complete!',{rate:.95,pitch:1});
-  btnStart.textContent='START'; btnStart.disabled=false;
-  btnPause.disabled=true; lockConfig(false);
+  btnStart.textContent='START'; btnReset.style.visibility='visible'; lockConfig(false);
 }
 
 // ── CONTROLS ─────────────────────────────────────────────────
-function startTimer() {
+function toggleTimer() {
   if (actx.state==='suspended') actx.resume();
   prewarmSpeech();
-  if ((running||inStartCd)&&!paused) return;
-  if (!running&&!inStartCd) {
+  if ((running || inStartCd) && !paused) {
+    // running → pause
+    clearInterval(timerID); timerID=null; paused=true;
+    releaseWakeLock();
+    btnStart.textContent='RESUME';
+    setStatus('paused');
+  } else if (paused) {
+    // paused → resume
+    paused=false; btnStart.textContent='PAUSE';
+    if (inStartCd) { setStatus('countdown'); timerID=setInterval(tickStartCd,1000); requestWakeLock(); }
+    else           { setStatus('running');   timerID=setInterval(tickEmom,1000);    requestWakeLock(); }
+  } else {
+    // stopped → start fresh
     const durEl = document.getElementById('cfgDuration');
     const durVal = +durEl.value;
     if (!durEl.value || durVal < +durEl.min || durVal > +durEl.max) {
@@ -898,21 +966,22 @@ function startTimer() {
     totalRounds  =togDeathBy.checked?Infinity:Math.max(1,+document.getElementById('cfgRounds').value||10);
     roundDuration=durVal;
     logList.innerHTML=''; logWrap.style.display='none';
-    btnStart.disabled=true; btnPause.disabled=false; lockConfig(true);
+    btnStart.textContent='PAUSE'; btnReset.style.visibility='visible'; lockConfig(true);
     if (togStartCd.checked) { inStartCd=true; initStartCd(); timerID=setInterval(tickStartCd,1000); requestWakeLock(); }
     else                    { launchEmom(); requestWakeLock(); }
-  } else if (paused) {
-    paused=false; btnStart.disabled=true; btnStart.textContent='START';
-    if (inStartCd) { setStatus('countdown'); timerID=setInterval(tickStartCd,1000); requestWakeLock(); }
-    else           { setStatus('running');   timerID=setInterval(tickEmom,1000);    requestWakeLock(); }
   }
 }
-function pauseTimer() {
-  if ((!running&&!inStartCd)||paused) return;
-  clearInterval(timerID); timerID=null; paused=true;
-  releaseWakeLock();
-  btnStart.disabled=false; btnStart.textContent='RESUME';
-  setStatus('paused');
+function askReset() {
+  if (!running && !inStartCd && !paused) { resetTimer(); return; }
+  resetModal.classList.add('visible');
+}
+function closeResetModal(e) {
+  if (e && e.target !== resetModal) return;
+  resetModal.classList.remove('visible');
+}
+function confirmReset() {
+  resetModal.classList.remove('visible');
+  resetTimer();
 }
 function resetTimer() {
   clearInterval(timerID); timerID=null;
@@ -925,15 +994,16 @@ function resetTimer() {
   ringProg.style.strokeDasharray=`0 ${CIRCUM}`;
   setRingGlow(cssVar('--accent'));
   ringHalf.style.strokeDasharray='0 1000';
-  drawRoundSegments(0, 0); // clear segments
+  drawRoundSegments(0, 0);
+  updateRoundDisplay(0, 0);
   setStatus('');
-  btnStart.textContent='START'; btnStart.disabled=false;
-  btnPause.disabled=true;
+  btnStart.textContent='START';
+  btnReset.style.visibility='hidden';
   lockConfig(false);
 }
 
 // ── VERSION ───────────────────────────────────────────────────
-const APP_VERSION = '1.3.4';
+const APP_VERSION = '1.5.0';
 document.getElementById('footerVersion').textContent = 'v' + APP_VERSION;
 
 // ── INIT ──────────────────────────────────────────────────────
