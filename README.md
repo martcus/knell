@@ -30,7 +30,8 @@ It's a staple of kettlebell programming: swings, snatches, clean & press, goblet
 | ▶ | **Start timer** | Optional pre-workout countdown (5 – 60 s, steps of 5) before the EMOM begins |
 | 🗣 | **Voice announcements** | Speaks "Round 1", "Round 2"…, "Halfway", "Go!", and "Workout complete!" |
 | ⭕ | **Round progress ring** | Inner SVG ring segmented by round count — shows completed, current, and remaining rounds at a glance |
-| 🌓 | **Auto dark / light theme** | Follows your device's system preference automatically |
+| 🌓 | **Dark / light theme** | Follows your device's preference; sun/moon button (top-right) overrides it and remembers the choice |
+| 🏋️ | **Work / Rest intervals** | Optional tabata-style mode: each round is *work X s + rest Y s* with distinct colours, sounds and voice cues (no trailing rest after the last round) |
 | 💡 | **Screen always on** | Keeps the screen awake while the timer is running (Wake Lock API) |
 | ⚙️ | **Collapsible settings** | Advanced options panel collapses to keep the interface clean; preference is remembered |
 | 📋 | **Round log** | Compact in-session history of each completed round |
