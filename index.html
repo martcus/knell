@@ -457,7 +457,7 @@ main {
 @keyframes slideIn { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:translateY(0)} }
 .log-num {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 1rem; color: var(--accent); min-width: 26px;
+  font-size: 1rem; color: var(--accent); min-width: 34px;
 }
 .log-bar-wrap { flex: 1; display: flex; height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
 .log-bar { height: 100%; width: 0; transition: width .5s ease; }
@@ -562,7 +562,7 @@ footer {
   <!-- CONTROLS -->
   <div class="controls">
     <button class="btn-start" id="btnStart" onclick="toggleTimer()">START</button>
-    <button class="btn-done" id="btnDone" onclick="markDone()">ROUND DONE</button>
+    <button class="btn-done" id="btnDone" onclick="markDone()">SET DONE</button>
     <button class="btn-reset" id="btnReset" onclick="askReset()" style="visibility:hidden">Reset</button>
   </div>
 
@@ -720,7 +720,7 @@ footer {
     </div><!-- /.settings-body-inner -->
   </div><!-- /.settings-body -->
   <div class="log-wrap" id="logWrap" style="display:none">
-    <div class="log-title">Round Log</div>
+    <div class="log-title" id="logTitle">Round Log</div>
     <div class="log-summary" id="logSummary"></div>
     <div class="log-list" id="logList"></div>
     <button class="btn-copy" id="btnCopy" onclick="copySummary()">Copy summary</button>
@@ -781,6 +781,7 @@ function speak(text, opts={}) {
 // ── STATE ─────────────────────────────────────────────────────
 let totalRounds=10, roundDuration=60;
 let currentRound=0, elapsed=0;
+let halfSplit=false, segStart=0;   // halfSplit: classic round tracked as two halves (halfway countdown on); segStart: elapsed second where the current half began
 let wrMode=false, phase='work', phaseDur=60, workDur=20, restDur=10;   // phase/phaseDur: current work|rest (or whole round) segment
 let timerID=null, running=false, paused=false, halfFired=false, workSec=null;
 let inStartCd=false, startCdVal=0, startCdTotal=0;
@@ -839,6 +840,7 @@ const durCell          = document.getElementById('durCell');
 const configGrid       = document.getElementById('configGrid');
 const btnDone          = document.getElementById('btnDone');
 const logSummary       = document.getElementById('logSummary');
+const logTitle         = document.getElementById('logTitle');
 const btnCopy          = document.getElementById('btnCopy');
 
 const CIRCUM = 2 * Math.PI * 86;
@@ -1014,11 +1016,11 @@ function flash_(color) {
 function fmtSec(s) { const m=Math.floor(s/60); return m>0?`${m}:${String(s%60).padStart(2,'0')}`:`${s}s`; }
 // work = seconds until the user tapped DONE (null if not tapped); rest = remainder of the round
 let logData=[], sessionInfo=null;
-function addLog(round, work, rest, total) {
-  logData.push({round,work,rest});
+function addLog(label, work, rest, total) {   // label: '01' or '01A'/'01B' (halves); total: seconds the bar represents
+  logData.push({round:label,work,rest});
   const el=document.createElement('div'); el.className='log-item';
   const txt = work==null ? '—' : rest==null ? `<b>${fmtSec(work)}</b>` : `<b>${fmtSec(work)}</b> / <i>${fmtSec(rest)}</i>`;
-  el.innerHTML=`<div class="log-num">${String(round).padStart(2,'0')}</div>`
+  el.innerHTML=`<div class="log-num">${label}</div>`
     + `<div class="log-bar-wrap">`
     + (work==null ? `<div class="log-bar none"></div>` : `<div class="log-bar work"></div><div class="log-bar rest"></div>`)
     + `</div>`
@@ -1031,6 +1033,16 @@ function addLog(round, work, rest, total) {
   });
   logWrap.style.display='block';
   updateLogSummary();
+}
+function updateLogTitle() {   // "Round Log · 60s (30s + 30s)" / "Round Log · 20s work + 10s rest"
+  const si=sessionInfo;
+  let d;
+  if (si.wr) d=`${fmtSec(si.wr.work)} work + ${fmtSec(si.wr.rest)} rest`;
+  else {
+    d=fmtSec(si.dur);
+    if (halfSplit) { const h=Math.floor(si.dur/2); d+=` (${fmtSec(h)} + ${fmtSec(si.dur-h)})`; }
+  }
+  logTitle.textContent='Round Log · '+d;
 }
 function logStats() {
   const w=logData.filter(x=>x.work!=null), r=logData.filter(x=>x.rest!=null);
@@ -1051,7 +1063,7 @@ function buildSummary() {
   const mode = si.wr ? `Work/Rest ${n} ${fmtSec(si.wr.work)}/${fmtSec(si.wr.rest)}` : si.rounds===Infinity ? `Death by ${fmtSec(si.dur)}` : `EMOM ${n} ${fmtSec(si.dur)}`;
   const lines=[`Knell · ${si.date.toLocaleDateString()} ${si.date.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`,
                `${mode} — ${logData.length} round${logData.length===1?'':'s'} completed`, ''];
-  logData.forEach(x=>lines.push(`R${pad2(x.round)}  ` + (x.work==null ? '—' : `work ${fmtSec(x.work)}` + (x.rest==null ? '' : ` / rest ${fmtSec(x.rest)}`))));
+  logData.forEach(x=>lines.push(`R${x.round}  ` + (x.work==null ? '—' : `work ${fmtSec(x.work)}` + (x.rest==null ? '' : ` / rest ${fmtSec(x.rest)}`))));
   if (st) lines.push('', `Avg work ${fmtSec(st.work)}` + (st.rest==null ? '' : ` · avg rest ${fmtSec(st.rest)} · min rest ${fmtSec(st.minRest)}`));
   return lines.join('\n');
 }
@@ -1075,10 +1087,11 @@ async function copySummary() {
 function setDoneBtn(visible, enabled=true) {
   btnDone.classList.toggle('visible', visible);
   btnDone.disabled=!enabled;
+  btnDone.textContent = enabled ? 'SET DONE' : 'RESTING…';
   ringWrap.classList.toggle('tappable', visible && enabled);
 }
 function markDone() {
-  if (!running || paused || inStartCd || wrMode || workSec!==null || elapsed<1) return;
+  if (!running || paused || inStartCd || wrMode || workSec!==null || elapsed<=segStart) return;
   workSec=elapsed;
   ringLabel.textContent='REST';
   setDoneBtn(true,false);
@@ -1125,7 +1138,7 @@ function launchEmom(fromCountdown=false) {
   startRound(1,fromCountdown);
 }
 function startRound(n, delaySpeak=false) {
-  currentRound=n; elapsed=0; halfFired=false; workSec=null;
+  currentRound=n; elapsed=0; halfFired=false; workSec=null; segStart=0;
   phase='work'; phaseDur=wrMode?workDur:roundDuration;
   setDoneBtn(!wrMode);
   ringLabel.textContent=wrMode?'WORK':'SECONDS';
@@ -1159,6 +1172,11 @@ function tickEmom() {
   if (!wrMode) {
     if (!halfFired && elapsed===half) {
       halfFired=true;
+      if (halfSplit) {                       // close the 1st half in the log, re-arm DONE for the 2nd
+        addLog(pad2(currentRound)+'A',workSec,workSec==null?null:half-workSec,half);
+        workSec=null; segStart=elapsed;
+        ringLabel.textContent='SECONDS'; setDoneBtn(true);
+      }
       sndHalf(); flash_(cssVar('--mint')); setStatus('half');
       speak('Halfway',{rate:1.0,pitch:1.05});
       setTimeout(()=>{ if(running) setStatus('running'); },1200);
@@ -1170,14 +1188,15 @@ function tickEmom() {
 
   const last=!togDeathBy.checked && currentRound>=totalRounds;
   if (!wrMode) {
-    addLog(currentRound,workSec,workSec==null?null:phaseDur-workSec,phaseDur);
+    if (halfSplit) addLog(pad2(currentRound)+'B',workSec==null?null:workSec-segStart,workSec==null?null:phaseDur-workSec,phaseDur-segStart);
+    else           addLog(pad2(currentRound),workSec,workSec==null?null:phaseDur-workSec,phaseDur);
     sndEnd(last); flash_(last?cssVar('--accent'):cssVar('--coral'));
     if (last) endSession(); else startRound(currentRound+1);
   } else if (phase==='work') {
-    if (last) { addLog(currentRound,workDur,null,workDur); sndEnd(true); flash_(cssVar('--accent')); endSession(); }   // no trailing rest
+    if (last) { addLog(pad2(currentRound),workDur,null,workDur); sndEnd(true); flash_(cssVar('--accent')); endSession(); }   // no trailing rest
     else startRest();
   } else {
-    addLog(currentRound,workDur,restDur,workDur+restDur);
+    addLog(pad2(currentRound),workDur,restDur,workDur+restDur);
     sndEnd(false); flash_(cssVar('--coral')); startRound(currentRound+1);
   }
 }
@@ -1214,12 +1233,14 @@ function toggleTimer() {
     fields.forEach(validateCfg);
     if (fields.some(cfgInvalid)) return;
     wrMode = useWR;
+    halfSplit = !wrMode && togHalfCountdown.checked;
     if (wrMode) { workDur=+fields[0].value; restDur=+fields[1].value; }
     const durVal = wrMode ? workDur+restDur : +fields[0].value;
     totalRounds  =togDeathBy.checked?Infinity:Math.max(1,+document.getElementById('cfgRounds').value||10);
     roundDuration=durVal;
     logList.innerHTML=''; logWrap.style.display='none'; logData=[]; updateLogSummary();
     sessionInfo={date:new Date(), rounds:totalRounds, dur:roundDuration, wr:wrMode?{work:workDur,rest:restDur}:null};
+    updateLogTitle();
     btnStart.textContent='PAUSE'; btnReset.style.visibility='visible'; lockConfig(true);
     if (togStartCd.checked) { inStartCd=true; initStartCd(); clockStart(tickStartCd); requestWakeLock(); }
     else                    { launchEmom(); requestWakeLock(); }
@@ -1258,7 +1279,7 @@ function resetTimer() {
 }
 
 // ── VERSION ───────────────────────────────────────────────────
-const APP_VERSION = '1.8.0';
+const APP_VERSION = '1.9.2';
 document.getElementById('footerVersion').textContent = 'v' + APP_VERSION;
 
 // ── INIT ──────────────────────────────────────────────────────

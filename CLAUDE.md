@@ -20,13 +20,13 @@ Otherwise installed PWAs keep serving the old cached version.
   - Seconds missed while throttled are replayed with `catchingUp=true`; all sound/speech/flash helpers return early in that state, so only the last replayed second is audible. New sound/UI-effect helpers must honour `catchingUp`.
   - Start countdown → first round hands off on the same clock (`launchEmom(true)` shifts `clockOrigin`) so no drift is added.
 - **Round model**: `elapsed`/`phaseDur` are per *phase*. Classic mode: one phase per round (`roundDuration`), with halfway signal. Work/Rest mode (`wrMode`): `phase` is `'work'|'rest'`, no halfway, no trailing rest after the last round, DONE button hidden.
-- **DONE tap** (classic mode only): `markDone()` stores `workSec`; rest = `phaseDur - workSec`. Log entries are `{round, work, rest}`; `rest===null` means "no data" (or the last work/rest round). `logStats()` feeds both the on-screen summary and the copy-to-clipboard text (`buildSummary`).
+- **DONE tap** (classic mode only): `markDone()` stores `workSec` (elapsed seconds in the round). With *Halfway countdown* on at start (`halfSplit`), each round is tracked as two halves: DONE re-arms at the halfway tick, `segStart` marks where the current half began, and two log rows are written per round (`01A` at halfway, `01B` at round end; rest = half length - work). With it off, one row per round with rest = `phaseDur - workSec`. Log entries are `{round (label string), work, rest}`; `rest===null` means "no data" (or the last work/rest round). `logStats()` feeds both the on-screen summary and the copy-to-clipboard text (`buildSummary`).
 - **Theme**: CSS dark vars in `:root`, light vars in `:root[data-theme="light"]`. Ring stroke colour is an *inline* value resolved with `cssVar()` at draw time, so it must be redrawn after a theme change (`toggleTheme` does this). Preference stored in `localStorage` key `knell_theme`; absent = follow OS.
 - **Audio/speech** start only after a user gesture (iOS); `toggleTimer` resumes the `AudioContext` and prewarms speech.
 - Other `localStorage` key: `knell_settings_open`. Run config (rounds/duration/toggles) is *not* persisted yet.
 
 ## Working in this repo
-- Edit `index.html` directly; it's large, so read the relevant section rather than the whole file. Files use LF line endings.
+- Edit `index.html` directly; it's large, so read the relevant section rather than the whole file. index.html uses CRLF line endings (scripted edits must normalise/restore them).
 - Verify JS syntax quickly by extracting the `<script>` blocks and running `node --check` on them.
 - UI language is English (labels, voice announcements, copied summary); conversation with the maintainer is in Italian.
 
