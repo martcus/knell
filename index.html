@@ -1242,6 +1242,8 @@ function toggleTimer() {
     sessionInfo={date:new Date(), rounds:totalRounds, dur:roundDuration, wr:wrMode?{work:workDur,rest:restDur}:null};
     updateLogTitle();
     btnStart.textContent='PAUSE'; btnReset.style.visibility='visible'; lockConfig(true);
+    applySettingsState(false);                       // collapse (without touching the saved preference) and bring the timer back into view
+    window.scrollTo({top:0, behavior:'smooth'});
     if (togStartCd.checked) { inStartCd=true; initStartCd(); clockStart(tickStartCd); requestWakeLock(); }
     else                    { launchEmom(); requestWakeLock(); }
   }
@@ -1279,7 +1281,7 @@ function resetTimer() {
 }
 
 // ── VERSION ───────────────────────────────────────────────────
-const APP_VERSION = '1.9.2';
+const APP_VERSION = '1.9.3';
 document.getElementById('footerVersion').textContent = 'v' + APP_VERSION;
 
 // ── INIT ──────────────────────────────────────────────────────
