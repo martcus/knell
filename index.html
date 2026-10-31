@@ -566,6 +566,14 @@ footer {
     <button class="btn-reset" id="btnReset" onclick="askReset()" style="visibility:hidden">Reset</button>
   </div>
 
+  <!-- LOG (kept right under the controls so it is visible during the workout) -->
+  <div class="log-wrap" id="logWrap" style="display:none">
+    <div class="log-title" id="logTitle">Round Log</div>
+    <div class="log-summary" id="logSummary"></div>
+    <div class="log-list" id="logList"></div>
+    <button class="btn-copy" id="btnCopy" onclick="copySummary()">Copy summary</button>
+  </div>
+
   <!-- RESET CONFIRM MODAL -->
   <div class="modal-overlay" id="resetModal" onclick="closeResetModal(event)">
     <div class="modal-sheet">
@@ -650,7 +658,7 @@ footer {
   <!-- TOGGLES (collapsible) -->
   <div class="settings-body" id="settingsBody">
     <div class="settings-body-inner">
-      <div class="card" style="margin-top: 0">
+      <div class="card" id="settingsCard" style="margin-top: 0">
 
     <div class="toggle-row">
       <div class="toggle-icon">
@@ -719,12 +727,6 @@ footer {
     </div><!-- /.card -->
     </div><!-- /.settings-body-inner -->
   </div><!-- /.settings-body -->
-  <div class="log-wrap" id="logWrap" style="display:none">
-    <div class="log-title" id="logTitle">Round Log</div>
-    <div class="log-summary" id="logSummary"></div>
-    <div class="log-list" id="logList"></div>
-    <button class="btn-copy" id="btnCopy" onclick="copySummary()">Copy summary</button>
-  </div>
 
 </main>
 <footer>
@@ -1087,7 +1089,7 @@ async function copySummary() {
 function setDoneBtn(visible, enabled=true) {
   btnDone.classList.toggle('visible', visible);
   btnDone.disabled=!enabled;
-  btnDone.textContent = enabled ? 'SET DONE' : 'RESTING…';
+  btnDone.textContent = enabled ? 'SET DONE' : 'RESTING';
   ringWrap.classList.toggle('tappable', visible && enabled);
 }
 function markDone() {
@@ -1099,9 +1101,12 @@ function markDone() {
 }
 
 // ── LOCK CONFIG ───────────────────────────────────────────────
-function lockConfig(on) {
-  configCard.style.opacity      = on ? '0.35' : '1';
-  configCard.style.pointerEvents= on ? 'none'  : 'auto';
+function lockConfig(on) {   // freeze every setting while a session is active (inert also blocks keyboard focus)
+  for (const el of [configCard, document.getElementById('settingsCard')]) {
+    el.style.opacity       = on ? '0.35' : '1';
+    el.style.pointerEvents = on ? 'none'  : 'auto';
+    el.inert = on;
+  }
 }
 
 // ── START COUNTDOWN ───────────────────────────────────────────
@@ -1265,6 +1270,7 @@ function resetTimer() {
   releaseWakeLock();
   running=paused=inStartCd=false;
   currentRound=elapsed=startCdVal=0; halfFired=false; workSec=null; phase='work';
+  logList.innerHTML=''; logWrap.style.display='none'; logData=[]; updateLogSummary();
   setDoneBtn(false);
   roundsField.classList.remove('hidden');
   ringLabel.textContent='SECONDS';
@@ -1281,7 +1287,7 @@ function resetTimer() {
 }
 
 // ── VERSION ───────────────────────────────────────────────────
-const APP_VERSION = '1.9.3';
+const APP_VERSION = '1.10.1';
 document.getElementById('footerVersion').textContent = 'v' + APP_VERSION;
 
 // ── INIT ──────────────────────────────────────────────────────

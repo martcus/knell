@@ -3,7 +3,7 @@
 // ⚠️  Keep CACHE_VERSION in sync with APP_VERSION in index.html
 //     Change this string on every deploy to bust the old cache.
 // ─────────────────────────────────────────────────────────────
-const CACHE_VERSION = 'knell-v1.9.3';
+const CACHE_VERSION = 'knell-v1.10.1';
 
 const ASSETS = [
   './index.html',
